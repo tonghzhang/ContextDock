@@ -1,0 +1,43 @@
+appId: io.contextdock.desktop
+productName: ContextDock
+directories:
+  output: release
+  buildResources: resources
+files:
+  - dist/main.cjs
+  - dist/preload.cjs
+  - dist/renderer/**/*
+  - resources/icon.png
+  - package.json
+  - '!node_modules/**/*'
+extraResources:
+  - from: dist/cli.cjs
+    to: cli/cli.cjs
+  - from: dist/mcp.cjs
+    to: cli/mcp.cjs
+extraFiles:
+  - from: resources/contextdock.cmd
+    to: contextdock.cmd
+  - from: resources/contextdock-mcp.cmd
+    to: contextdock-mcp.cmd
+asar: true
+npmRebuild: false
+win:
+  icon: resources/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  signAndEditExecutable: true
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: false
+  deleteAppDataOnUninstall: false
+  artifactName: ContextDock-Setup-${version}-${arch}.${ext}
+portable:
+  artifactName: ContextDock-Portable-${version}-${arch}.${ext}
