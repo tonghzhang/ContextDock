@@ -13,3 +13,8 @@ work/
 *.db-*
 .DS_Store
 Thumbs.db
+
+# Private transfer packages and local connection credentials
+*.contextdock
+github-connection.json
+credentials-*.tmp

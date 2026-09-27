@@ -36,6 +36,7 @@ import {
   WorkspaceDialog,
 } from './dialogs';
 import { useI18n } from './i18n';
+import { ExportDialog, ImportDialog } from './transfer-dialogs';
 
 type Announcement = { message: string; values?: Record<string, string | number> };
 
@@ -46,6 +47,8 @@ type DialogState =
   | { kind: 'delete-item'; workspaceId: string; item: WorkspaceItem }
   | { kind: 'report'; report: LaunchReport }
   | { kind: 'settings' }
+  | { kind: 'import' }
+  | { kind: 'export'; workspace: Workspace }
   | null;
 
 export function App() {
@@ -286,6 +289,13 @@ export function App() {
             <p>{t('Everything you need, ready when you are.')}</p>
           </div>
           <button
+            className="button button-secondary"
+            disabled={busy}
+            onClick={() => setDialog({ kind: 'import' })}
+          >
+            {t('Import')}
+          </button>
+          <button
             className="button button-secondary new-workspace-button"
             onClick={() => setDialog({ kind: 'workspace' })}
             disabled={busy}
@@ -445,6 +455,14 @@ export function App() {
               onResume={() => void resume(selected)}
               onEdit={() => setDialog({ kind: 'workspace', workspace: selected })}
               onDuplicate={() => void duplicate(selected)}
+              onExport={() => setDialog({ kind: 'export', workspace: selected })}
+              onLocateItem={(item) =>
+                void mutate(
+                  () => resultOf(desktop().locateItem(selected.id, item.id)),
+                  { message: 'Item location updated.' },
+                  selected.id,
+                )
+              }
               onDelete={() => setDialog({ kind: 'delete-workspace', workspace: selected })}
               onAdd={() => setDialog({ kind: 'item', workspaceId: selected.id })}
               onEditItem={(item) => setDialog({ kind: 'item', workspaceId: selected.id, item })}
@@ -574,6 +592,19 @@ export function App() {
       {dialog?.kind === 'report' && (
         <ReportDialog report={dialog.report} onClose={() => setDialog(null)} />
       )}
+      {dialog?.kind === 'import' && (
+        <ImportDialog
+          onClose={() => setDialog(null)}
+          onImported={async (workspace) => {
+            setQuery('');
+            await refresh(workspace.id);
+            setDialog(null);
+          }}
+        />
+      )}
+      {dialog?.kind === 'export' && (
+        <ExportDialog workspace={dialog.workspace} onClose={() => setDialog(null)} />
+      )}
       {dialog?.kind === 'settings' && (
         <SettingsDialog info={info} onClose={() => setDialog(null)} />
       )}
@@ -594,10 +625,14 @@ function WorkspaceDetail({
   onRemoveItem,
   onToggleItem,
   onMoveItem,
+  onExport,
+  onLocateItem,
 }: {
   workspace: Workspace;
   busy: boolean;
   running: boolean;
+  onExport: () => void;
+  onLocateItem: (item: WorkspaceItem) => void;
   onResume: () => void;
   onEdit: () => void;
   onDuplicate: () => void;
@@ -622,6 +657,9 @@ function WorkspaceDetail({
         <div className="detail-topline">
           <span className="eyebrow">{t('Workspace')}</span>
           <div className="workspace-actions">
+            <button className="text-button" disabled={busy} onClick={onExport}>
+              {t('Export')}
+            </button>
             <button
               className="icon-button"
               aria-label={t('Edit workspace')}
@@ -715,6 +753,15 @@ function WorkspaceDetail({
                 <div className="item-content">
                   <div className="item-name">
                     <strong title={item.name}>{item.name}</strong>
+                    {item.unresolved && (
+                      <button
+                        className="text-button unresolved-label"
+                        disabled={busy}
+                        onClick={() => onLocateItem(item)}
+                      >
+                        {t('Needs locating')} · {t('Locate…')}
+                      </button>
+                    )}
                     {!item.enabled && <span className="disabled-badge">{t('Disabled')}</span>}
                   </div>
                   <p className="item-target path-value" title={item.target}>
@@ -734,7 +781,7 @@ function WorkspaceDetail({
                     aria-label={t('Enable {name}', { name: item.name })}
                     title={t(item.enabled ? 'Disable item' : 'Enable item')}
                     onClick={() => onToggleItem(item)}
-                    disabled={busy}
+                    disabled={busy || item.unresolved}
                   >
                     <span>
                       {item.enabled && <Check size={10} strokeWidth={3} aria-hidden="true" />}

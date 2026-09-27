@@ -15,6 +15,8 @@ import { createContext, resolveDataDirectory } from '../core';
 import { translate } from '../shared/i18n';
 import type { ApiResult, ItemInput, Language, WorkspaceInput } from '../shared/types';
 
+import { transferHandlers } from './transfer-handlers';
+
 app.setName('ContextDock');
 const dataDirectory = resolveDataDirectory();
 const desktopDirectory = path.join(dataDirectory, 'desktop');
@@ -97,6 +99,7 @@ function showWindow(): void {
 function registerHandlers(): void {
   const service = context!.service;
   const handlers: Record<string, (...args: unknown[]) => unknown> = {
+    ...transferHandlers(service, dataDirectory, () => window, t),
     'workspace:list': () => service.listWorkspaces(),
     'workspace:get': (id) => service.getWorkspace(id as string),
     'workspace:create': (input) => service.createWorkspace(input as WorkspaceInput),

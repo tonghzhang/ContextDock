@@ -1,3 +1,4 @@
+import { transferMessages } from './locales/transfer';
 import type { Language } from './types';
 import { appMessages } from './locales/app';
 import { dialogMessages } from './locales/dialogs';
@@ -12,6 +13,7 @@ export const catalogs: TranslationTable[] = [
   appMessages,
   dialogMessages,
   nativeMessages,
+  transferMessages,
 ];
 export const messages: TranslationTable = Object.assign({}, ...catalogs);
 

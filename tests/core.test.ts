@@ -57,7 +57,7 @@ describe('SQLite persistence and migration', () => {
     contexts.push(second);
     expect(second.service.getWorkspace(' modelmux ')).toEqual(original);
     const database = new DatabaseSync(join(first.dataDir, 'contextdock.sqlite'));
-    expect(database.prepare('PRAGMA user_version').get()?.user_version).toBe(2);
+    expect(database.prepare('PRAGMA user_version').get()?.user_version).toBe(3);
     expect(database.prepare('PRAGMA journal_mode').get()?.journal_mode).toBe('wal');
     database.close();
   });
@@ -141,10 +141,10 @@ describe('SQLite persistence and migration', () => {
     });
     upgraded.service.setLanguage('ja');
     const inspection = new DatabaseSync(filename);
-    expect(inspection.prepare('PRAGMA user_version').get()?.user_version).toBe(2);
+    expect(inspection.prepare('PRAGMA user_version').get()?.user_version).toBe(3);
     expect(inspection.prepare('SELECT * FROM workspaces').all()).toEqual(workspacesBefore);
     expect(inspection.prepare('SELECT * FROM workspace_items ORDER BY launch_order').all()).toEqual(
-      itemsBefore,
+      itemsBefore.map((item) => ({ ...item, unresolved: 0 })),
     );
     expect(
       inspection.prepare('SELECT value FROM app_settings WHERE key = ?').get('language')?.value,
@@ -167,12 +167,12 @@ describe('SQLite persistence and migration', () => {
     const dataDir = tempDirectory();
     const database = openDatabase(dataDir);
     database.exec(
-      "CREATE TABLE future_data (value TEXT); INSERT INTO future_data VALUES ('keep'); PRAGMA user_version = 3;",
+      "CREATE TABLE future_data (value TEXT); INSERT INTO future_data VALUES ('keep'); PRAGMA user_version = 4;",
     );
     database.close();
     expect(() => createContext({ dataDir })).toThrow('newer ContextDock version');
     const inspection = new DatabaseSync(join(dataDir, 'contextdock.sqlite'));
-    expect(inspection.prepare('PRAGMA user_version').get()?.user_version).toBe(3);
+    expect(inspection.prepare('PRAGMA user_version').get()?.user_version).toBe(4);
     expect(inspection.prepare('SELECT value FROM future_data').get()?.value).toBe('keep');
     inspection.close();
   });

@@ -27,12 +27,15 @@
     "cli": "node dist/cli.cjs",
     "mcp": "node dist/mcp.cjs",
     "dist": "npm run build && electron-builder --win nsis portable --x64 --publish never",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "verify": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build",
     "predist": "node -e \"require('electron')\"",
-    "test:e2e:languages": "node scripts/languages-smoke.mjs"
+    "test:e2e:languages": "node scripts/languages-smoke.mjs",
+    "test:e2e:transfer": "node scripts/transfer-smoke.mjs",
+    "test:e2e:token": "node scripts/native-token-smoke.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
+    "fflate": "^0.8.3",
     "lucide-react": "^0.577.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

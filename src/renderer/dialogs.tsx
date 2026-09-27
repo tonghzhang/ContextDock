@@ -17,6 +17,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import type { AppInfo, ItemType, LaunchReport, Workspace, WorkspaceItem } from '../shared/types';
 import { desktop, errorText, getTypeNames, localizeError, resultOf } from './api';
 import { useI18n } from './i18n';
+import { GitHubSettings } from './github-settings';
 
 export function ItemIcon({ type, size = 18 }: { type: ItemType; size?: number }) {
   const Icon = { application: Monitor, file: File, folder: Folder, url: Globe2 }[type];
@@ -44,7 +45,7 @@ export function ErrorMessage({ children }: { children: ReactNode }) {
   );
 }
 
-function Modal({
+export function Modal({
   title,
   subtitle,
   children,
@@ -611,6 +612,7 @@ export function SettingsDialog({ info, onClose }: { info: AppInfo | null; onClos
             {error && <ErrorMessage>{error}</ErrorMessage>}
           </div>
         </section>
+        <GitHubSettings />
         <section>
           <h3>{t('Keyboard shortcuts')}</h3>
           <dl className="shortcuts-list">

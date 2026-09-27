@@ -28,6 +28,7 @@ const migrations = [
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );`,
+  `ALTER TABLE workspace_items ADD COLUMN unresolved INTEGER NOT NULL DEFAULT 0 CHECK(unresolved IN (0, 1));`,
 ];
 
 export function transaction<T>(database: DatabaseSync, action: () => T): T {

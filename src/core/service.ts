@@ -1,3 +1,4 @@
+import type { ImportedWorkspace, ImportMode } from '../shared/transfer';
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 import type {
@@ -29,6 +30,7 @@ type ItemRow = {
   target: string;
   arguments_json: string;
   enabled: number;
+  unresolved: number;
   launch_order: number;
 };
 
@@ -58,6 +60,56 @@ export class WorkspaceService {
         )
         .run('language', language);
       return language;
+    });
+  }
+
+  hasWorkspaceId(id: string): boolean {
+    return Boolean(this.database.prepare('SELECT id FROM workspaces WHERE id = ?').get(id));
+  }
+  importWorkspace(input: ImportedWorkspace, mode: Exclude<ImportMode, 'cancel'>): Workspace {
+    const value = workspaceInput(input);
+    const items = input.items.map((item) => ({
+      ...itemInput(item),
+      unresolved: item.unresolved === true,
+    }));
+    if (!/^[0-9a-f-]{36}$/iu.test(input.id) || !['replace', 'duplicate'].includes(mode))
+      throw new WorkspaceError('Invalid workspace manifest.');
+    return transaction(this.database, () => {
+      const id = mode === 'duplicate' ? randomUUID() : input.id;
+      if (this.opening.has(id)) throw new WorkspaceError('This workspace is already opening.');
+      let name = value.name;
+      let suffix = 1;
+      while (true) {
+        const existing = this.database
+          .prepare('SELECT id FROM workspaces WHERE name_key = ?')
+          .get(nameKey(name));
+        if (!existing || existing.id === id) break;
+        name = value.name.slice(0, 180) + ' (import ' + suffix++ + ')';
+      }
+      const now = new Date().toISOString();
+      this.database
+        .prepare(
+          `INSERT INTO workspaces (id, name, name_key, description, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name=excluded.name, name_key=excluded.name_key,
+        description=excluded.description, updated_at=excluded.updated_at, last_used_at=NULL`,
+        )
+        .run(id, name, nameKey(name), value.description, now, now);
+      this.database.prepare('DELETE FROM workspace_items WHERE workspace_id = ?').run(id);
+      for (const item of items) this.insertItem(id, item);
+      return this.getWorkspace(id);
+    });
+  }
+  resolveItem(workspaceId: string, itemId: string, target: string): WorkspaceItem {
+    return transaction(this.database, () => {
+      const existing = this.getItem(workspaceId, itemId);
+      const value = itemInput({ ...existing, target });
+      this.database
+        .prepare(
+          'UPDATE workspace_items SET target = ?, unresolved = 0, enabled = 1 WHERE workspace_id = ? AND id = ?',
+        )
+        .run(value.target, workspaceId, itemId);
+      this.touch(workspaceId);
+      return this.getItem(workspaceId, itemId);
     });
   }
   listWorkspaces(): Workspace[] {
@@ -170,16 +222,18 @@ export class WorkspaceService {
       const workspace = this.getWorkspace(reference);
       const existing = this.getItem(workspace.id, itemId);
       const value = itemInput(input, existing);
+      const unresolved = Boolean(existing.unresolved && value.type !== 'url');
       this.database
         .prepare(
-          'UPDATE workspace_items SET type = ?, name = ?, target = ?, arguments_json = ?, enabled = ? WHERE workspace_id = ? AND id = ?',
+          'UPDATE workspace_items SET type = ?, name = ?, target = ?, arguments_json = ?, enabled = ?, unresolved = ? WHERE workspace_id = ? AND id = ?',
         )
         .run(
           value.type,
           value.name,
           value.target,
           JSON.stringify(value.arguments),
-          value.enabled ? 1 : 0,
+          value.enabled && !unresolved ? 1 : 0,
+          unresolved ? 1 : 0,
           workspace.id,
           existing.id,
         );
@@ -239,7 +293,7 @@ export class WorkspaceService {
       workspaceName: workspace.name,
       startedAt,
       finishedAt: startedAt,
-      skipped: workspace.items.filter((item) => !item.enabled).length,
+      skipped: workspace.items.filter((item) => !item.enabled || item.unresolved).length,
       results: [],
     };
     try {
@@ -247,7 +301,7 @@ export class WorkspaceService {
         .prepare('UPDATE workspaces SET last_used_at = ?, updated_at = ? WHERE id = ?')
         .run(startedAt, startedAt, workspace.id);
       for (const item of workspace.items) {
-        if (!item.enabled) continue;
+        if (!item.enabled || item.unresolved) continue;
         const result = { itemId: item.id, name: item.name, target: item.target, type: item.type };
         try {
           // Validate persisted values too; every entry point shares this boundary.
@@ -313,7 +367,8 @@ export class WorkspaceService {
       name: row.name,
       target: row.target,
       arguments: args as string[],
-      enabled: row.enabled === 1,
+      enabled: row.enabled === 1 && row.unresolved !== 1,
+      unresolved: row.unresolved === 1,
       launchOrder: row.launch_order,
     };
   }
@@ -327,11 +382,14 @@ export class WorkspaceService {
     return this.itemFromRow(row);
   }
 
-  private insertItem(workspaceId: string, value: Required<ItemInput>): WorkspaceItem {
+  private insertItem(
+    workspaceId: string,
+    value: Required<ItemInput> & { unresolved?: boolean },
+  ): WorkspaceItem {
     const id = randomUUID();
     this.database
       .prepare(
-        'INSERT INTO workspace_items (id, workspace_id, type, name, target, arguments_json, enabled, launch_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO workspace_items (id, workspace_id, type, name, target, arguments_json, enabled, launch_order, unresolved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       )
       .run(
         id,
@@ -340,10 +398,17 @@ export class WorkspaceService {
         value.name,
         value.target,
         JSON.stringify(value.arguments),
-        value.enabled ? 1 : 0,
+        value.enabled && !value.unresolved ? 1 : 0,
         value.launchOrder,
+        value.unresolved ? 1 : 0,
       );
-    return { ...value, id, workspaceId, arguments: [...value.arguments] };
+    return {
+      ...value,
+      unresolved: value.unresolved ?? false,
+      id,
+      workspaceId,
+      arguments: [...value.arguments],
+    };
   }
 
   private writeOrder(workspaceId: string, ids: string[]): void {

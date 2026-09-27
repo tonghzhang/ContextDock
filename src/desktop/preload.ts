@@ -1,6 +1,19 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopApi } from '../shared/types';
 const api: DesktopApi = {
+  exportWorkspace: (id, files, destination) =>
+    ipcRenderer.invoke('transfer:export', id, files, destination),
+  importLocal: () => ipcRenderer.invoke('transfer:import-local'),
+  listRemote: () => ipcRenderer.invoke('transfer:list-remote'),
+  importRemote: (path) => ipcRenderer.invoke('transfer:import-remote', path),
+  locateImport: (id, itemId) => ipcRenderer.invoke('transfer:locate', id, itemId),
+  commitImport: (id, mode) => ipcRenderer.invoke('transfer:commit', id, mode),
+  cancelImport: (id) => ipcRenderer.invoke('transfer:cancel', id),
+  locateItem: (id, itemId) => ipcRenderer.invoke('item:locate', id, itemId),
+  getGitHubConnection: () => ipcRenderer.invoke('github:status'),
+  saveGitHubConnection: (config) => ipcRenderer.invoke('github:save', config),
+  setGitHubToken: () => ipcRenderer.invoke('github:token'),
+  testGitHubConnection: () => ipcRenderer.invoke('github:test'),
   getLanguage: () => ipcRenderer.invoke('app:get-language'),
   setLanguage: (language) => ipcRenderer.invoke('app:set-language', language),
   listWorkspaces: () => ipcRenderer.invoke('workspace:list'),

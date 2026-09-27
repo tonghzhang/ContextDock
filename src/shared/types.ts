@@ -1,8 +1,16 @@
+import type {
+  GitHubConnection,
+  GitHubStatus,
+  ImportMode,
+  ImportPreview,
+  RemoteWorkspace,
+} from './transfer';
 export type Language = 'en' | 'zh-CN' | 'ja';
 export type ItemType = 'application' | 'file' | 'folder' | 'url';
 export interface WorkspaceItem {
   id: string;
   workspaceId: string;
+  unresolved?: boolean;
   type: ItemType;
   name: string;
   target: string;
@@ -58,6 +66,22 @@ export interface AppInfo {
   shortcutRegistered: boolean;
 }
 export interface DesktopApi {
+  exportWorkspace(
+    id: string,
+    fileIds: string[],
+    destination: 'local' | 'github',
+  ): Promise<ApiResult<boolean>>;
+  importLocal(): Promise<ApiResult<ImportPreview | null>>;
+  listRemote(): Promise<ApiResult<RemoteWorkspace[]>>;
+  importRemote(path: string): Promise<ApiResult<ImportPreview>>;
+  locateImport(sessionId: string, itemId: string): Promise<ApiResult<ImportPreview>>;
+  commitImport(sessionId: string, mode: ImportMode): Promise<ApiResult<Workspace | null>>;
+  cancelImport(sessionId: string): Promise<ApiResult<void>>;
+  locateItem(workspaceId: string, itemId: string): Promise<ApiResult<WorkspaceItem | null>>;
+  getGitHubConnection(): Promise<ApiResult<GitHubStatus>>;
+  saveGitHubConnection(config: GitHubConnection): Promise<ApiResult<GitHubStatus>>;
+  setGitHubToken(): Promise<ApiResult<GitHubStatus>>;
+  testGitHubConnection(): Promise<ApiResult<void>>;
   getLanguage(): Promise<ApiResult<Language>>;
   setLanguage(language: Language): Promise<ApiResult<Language>>;
   listWorkspaces(): Promise<ApiResult<Workspace[]>>;
