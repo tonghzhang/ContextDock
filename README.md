@@ -8,7 +8,7 @@ for a project once, then search for its workspace and press **Resume** to reopen
 
 Built with Electron, React, TypeScript, Vite, and SQLite. The desktop, CLI, and local
 MCP server share one workspace service and one database. No account, cloud backend,
-AI features, or activity tracking.
+AI features, or activity tracking. Optional manual GitHub import/export uses your own private repository.
 
 ![ContextDock workspace view](docs/screenshots/workspace.png)
 
@@ -61,11 +61,27 @@ command and protocol names remain unchanged.
 
 Screenshots: [简体中文](docs/screenshots/workspace-zh-CN.png) · [日本語](docs/screenshots/workspace-ja.png)
 
+## Workspace import and export
+
+Use **Export** in a workspace to save one `.contextdock` file. Include selected files,
+or export configuration only. On another computer, use **Import**, review the
+preview, and locate missing paths. Missing items remain disabled without blocking
+other resources. Existing workspace IDs can be replaced or imported as copies.
+
+For private-repository transfers, configure **Settings → GitHub connection**, then
+use **Export to GitHub** or **Import from GitHub**. Tokens are entered in a native
+Windows dialog and encrypted on this computer; the renderer never receives them.
+
+See [the transfer guide](docs/transfer.md) for setup, format, limits, and behavior.
+These changes are currently available in the source build; the v0.2.0 installers
+linked above predate the import/export feature.
+
 ## Local data
 
 All three interfaces use `%LOCALAPPDATA%\ContextDock\contextdock.sqlite` by default.
-Development mode uses this same location. Workspace data stays on your computer;
-opening a bookmarked website naturally connects to that website.
+Development mode uses this same location. Workspace data stays local unless you
+explicitly export a package or upload one to GitHub. Opening a bookmarked website
+naturally connects to that website.
 
 Set `CONTEXTDOCK_DATA_DIR` to an **absolute directory path** for an isolated profile.
 Use the same value in each desktop, CLI, and MCP process that should share that profile:
@@ -102,7 +118,7 @@ npm run build
 npm start
 ```
 
-`npm run verify` runs lint, type checking, tests, and the production build.
+`npm run verify` runs lint, format checking, type checking, tests, and the production build.
 `npm run format` formats source files. Tests cover the workspace service, migrations,
 launcher, CLI, and MCP protocol with isolated local databases and controlled launchers.
 The Windows CI workflow runs the static checks, tests, and production build.
@@ -112,6 +128,7 @@ Run the desktop smoke test on Windows after building:
 ```powershell
 npm run test:e2e
 npm run test:e2e:languages
+npm run test:e2e:transfer
 ```
 
 It uses an isolated profile under `work/` and checks desktop editing, ordered partial
@@ -208,6 +225,7 @@ and profile configuration](docs/mcp.md).
 ```text
 src/
   core/        Workspace service, validation, SQLite migrations, Windows launcher
+  transfer/    Shared ZIP format, import/export service, Local and GitHub providers
   shared/      Types shared by all interfaces
   desktop/     Electron main process, native dialogs, tray, secure preload bridge
   renderer/    React workspace list and editor
