@@ -4,7 +4,7 @@ ContextDock exposes a local **stdio** MCP server. It does not listen on a networ
 port or require a cloud service. It calls the same workspace service and SQLite
 database as the desktop and CLI.
 
-Build the project with `npm install` and `npm run build`. Use Node.js 24 or newer
+Build the project with `npm ci` and `npm run build`. Use Node.js 24 or newer
 for the source build. Add an entry like this to your MCP client's configuration,
 replacing the illustrative path with the absolute path to your local checkout:
 
@@ -18,6 +18,25 @@ replacing the illustrative path with the absolute path to your local checkout:
   }
 }
 ```
+
+For the installed app, use its bundled runtime instead of Node.js. Replace these
+illustrative paths with your installation directory:
+
+```json
+{
+  "mcpServers": {
+    "contextdock": {
+      "command": "C:/Applications/ContextDock/ContextDock.exe",
+      "args": ["C:/Applications/ContextDock/resources/cli/mcp.cjs"],
+      "env": { "ELECTRON_RUN_AS_NODE": "1" }
+    }
+  }
+}
+```
+
+No separate Node.js installation is required for this configuration. Paths with
+spaces remain single JSON values; do not embed shell quotes. The installer also
+includes `contextdock-mcp.cmd` for terminal use.
 
 Client configuration file locations vary. Use the client's local stdio server
 configuration interface. Start the server directly for diagnostics with
@@ -59,7 +78,8 @@ Example tool arguments:
 }
 ```
 
-All tools return JSON in both text content and `structuredContent`. Service errors
+Successful calls and service errors return JSON in both text content and `structuredContent`.
+Protocol and schema-validation errors use the SDK text error format. Service errors
 return `isError: true` and an `error` message. A partially failed Resume also returns
 `isError: true` but retains the full `report`, including successful, failed, and
 skipped items. Success means Windows accepted the launch request, not that the

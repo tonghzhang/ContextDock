@@ -3,8 +3,12 @@
 The CLI uses the same workspace service and local SQLite database as the desktop app.
 Node.js 24 or newer is required when running from source. Build once with `npm run build`.
 Use `npm run cli -- <command>` from the repository, or run `npm link` to make `contextdock`
-available in your terminal. The Windows desktop installer includes command wrappers and does not require Node.js;
-the source CLI and MCP server do.
+available in your terminal. The source CLI and MCP server require Node.js. The installed Windows app includes its own runtime.
+
+For an installed app, open a terminal in the installation directory and run
+`.\contextdock.cmd list`, or add the installation
+directory to your user `PATH` and use `contextdock` directly. Installed CLI and MCP
+commands do not require a separate Node.js installation.
 
 ```powershell
 contextdock create "ModelMux" --description "Gateway development"
