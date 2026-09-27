@@ -27,7 +27,8 @@
     "cli": "node dist/cli.cjs",
     "mcp": "node dist/mcp.cjs",
     "dist": "npm run build && electron-builder --win nsis portable --x64 --publish never",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "predist": "node -e \"require('electron')\""
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",

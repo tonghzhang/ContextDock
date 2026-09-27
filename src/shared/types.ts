@@ -18,7 +18,10 @@ export interface Workspace {
   lastUsedAt: string | null;
   items: WorkspaceItem[];
 }
-export interface WorkspaceInput { name: string; description?: string }
+export interface WorkspaceInput {
+  name: string;
+  description?: string;
+}
 export interface ItemInput {
   type: ItemType;
   name: string;
@@ -43,9 +46,16 @@ export interface LaunchReport {
   skipped: number;
   results: LaunchResult[];
 }
-export interface Launcher { launch(item: WorkspaceItem): Promise<void> }
+export interface Launcher {
+  launch(item: WorkspaceItem): Promise<void>;
+}
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
-export interface AppInfo { version: string; dataDirectory: string; shortcut: string; shortcutRegistered: boolean }
+export interface AppInfo {
+  version: string;
+  dataDirectory: string;
+  shortcut: string;
+  shortcutRegistered: boolean;
+}
 export interface DesktopApi {
   listWorkspaces(): Promise<ApiResult<Workspace[]>>;
   getWorkspace(id: string): Promise<ApiResult<Workspace>>;
@@ -54,7 +64,11 @@ export interface DesktopApi {
   deleteWorkspace(id: string): Promise<ApiResult<void>>;
   duplicateWorkspace(id: string): Promise<ApiResult<Workspace>>;
   addItem(workspaceId: string, input: ItemInput): Promise<ApiResult<WorkspaceItem>>;
-  updateItem(workspaceId: string, itemId: string, input: ItemInput): Promise<ApiResult<WorkspaceItem>>;
+  updateItem(
+    workspaceId: string,
+    itemId: string,
+    input: ItemInput,
+  ): Promise<ApiResult<WorkspaceItem>>;
   removeItem(workspaceId: string, itemId: string): Promise<ApiResult<void>>;
   reorderItems(workspaceId: string, itemIds: string[]): Promise<ApiResult<Workspace>>;
   resumeWorkspace(id: string): Promise<ApiResult<LaunchReport>>;

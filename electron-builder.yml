@@ -41,3 +41,5 @@ nsis:
   artifactName: ContextDock-Setup-${version}-${arch}.${ext}
 portable:
   artifactName: ContextDock-Portable-${version}-${arch}.${ext}
+
+electronDist: node_modules/electron/dist

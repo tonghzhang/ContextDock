@@ -6,8 +6,16 @@ export default tseslint.config(
   { ignores: ['dist/**', 'release/**', 'node_modules/**', 'work/**', 'coverage/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  { languageOptions: { globals: { ...globals.node, ...globals.browser }, ecmaVersion: 'latest' },
-    rules: { '@typescript-eslint/no-explicit-any': 'error', '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }] } },
-  { files: ['src/renderer/**/*.{ts,tsx}'], plugins: { 'react-hooks': reactHooks },
-    rules: { 'react-hooks/rules-of-hooks': 'error', 'react-hooks/exhaustive-deps': 'warn' } },
+  {
+    languageOptions: { globals: { ...globals.node, ...globals.browser }, ecmaVersion: 'latest' },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
+  {
+    files: ['src/renderer/**/*.{ts,tsx}'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: { 'react-hooks/rules-of-hooks': 'error', 'react-hooks/exhaustive-deps': 'warn' },
+  },
 );
