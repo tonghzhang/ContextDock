@@ -16,6 +16,7 @@ AI features, or activity tracking.
 
 ## Features
 
+- Switch the desktop between English, Simplified Chinese, and Japanese in Settings.
 - Create, rename, describe, duplicate, delete, and search workspaces; see when each was last used.
 - Add applications, files, folders, and HTTP/HTTPS URLs. Native Windows pickers select local targets.
 - Edit item names and targets, supply application arguments, enable or disable items, and reorder launches.
@@ -29,8 +30,8 @@ AI features, or activity tracking.
 
 Download a Windows x64 build from [GitHub Releases](https://github.com/tonghzhang/ContextDock/releases):
 
-- **`ContextDock-Setup-0.1.0-x64.exe`** installs the app, shortcuts, CLI, and MCP wrappers. No separate Node.js installation is needed.
-- **`ContextDock-Portable-0.1.0-x64.exe`** runs the desktop app without installation. It uses the same local data directory as the installed app; data is not stored beside the portable executable.
+- **`ContextDock-Setup-0.2.0-x64.exe`** installs the app, shortcuts, CLI, and MCP wrappers. No separate Node.js installation is needed.
+- **`ContextDock-Portable-0.2.0-x64.exe`** runs the desktop app without installation. It uses the same local data directory as the installed app; data is not stored beside the portable executable.
 
 Target platforms: **Windows 10 and Windows 11, x64**. This release is unsigned;
 Windows may show an unknown-publisher or SmartScreen warning. Verify that you
@@ -44,6 +45,21 @@ downloaded it from this repository's release page before proceeding.
 A successful result means Windows accepted the launch request. ContextDock does not
 wait for websites to load or applications to become ready. It reopens resources;
 it does not restore document pages, editor cursors, or window positions.
+
+## Language
+
+Open **Settings → Language** and choose **English**, **简体中文**, or **日本語**.
+The change applies immediately to the desktop and native menus, and is saved locally
+in SQLite for the next launch. Existing installations keep English until you select
+another language.
+
+中文：打开 **设置 → 语言**，选择 **简体中文**。更改即时生效，重启后保留。
+日本語：**設定 → 言語** で **日本語** を選択します。変更はすぐに反映され、次回起動時も保持されます。
+
+Workspace names, descriptions, paths, and arguments are never translated. CLI/MCP
+command and protocol names remain unchanged.
+
+Screenshots: [简体中文](docs/screenshots/workspace-zh-CN.png) · [日本語](docs/screenshots/workspace-ja.png)
 
 ## Local data
 
@@ -95,6 +111,7 @@ Run the desktop smoke test on Windows after building:
 
 ```powershell
 npm run test:e2e
+npm run test:e2e:languages
 ```
 
 It uses an isolated profile under `work/` and checks desktop editing, ordered partial
@@ -220,7 +237,7 @@ The renderer uses a narrow IPC bridge; it has no direct Node.js or database acce
 - Agent Integration
 - Cross-device Sync
 
-These are future directions, not features included in v0.1.0. The current release
+These are future directions, not features included in v0.2.0. The current release
 focuses on reliable manual bookmarks and one-click Resume.
 
 ## License

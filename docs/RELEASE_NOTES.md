@@ -1,34 +1,23 @@
-# ContextDock v0.1.0
+# ContextDock v0.2.0
 
-The first release of ContextDock: save the applications, files, folders, and
-websites needed for a project, then resume that workspace in one click.
+Switch ContextDock between **English**, **简体中文**, and **日本語** in Settings → Language.
 
-## Included
+## Added
 
-- Workspace creation, renaming, descriptions, duplication, deletion, search, and last-used times.
-- Native Windows file, folder, and application pickers; editable item arguments, enabled state, and launch order.
-- Ordered Resume with independent item error handling and a complete launch report.
-- Local SQLite persistence with schema migrations and one shared service for desktop, CLI, and MCP.
-- Global shortcut, in-app Ctrl+K search with Enter to Resume, and tray access.
-- CLI commands for workspace management and launch, with JSON output and meaningful exit codes.
-- Six local MCP tools for workspace listing, reading, creation, launching, item addition, and removal.
-- Windows x64 installer and portable desktop builds; the installer includes CLI/MCP wrappers and their runtime.
-- Unit and integration tests, strict TypeScript checks, ESLint, Prettier, and Windows CI configuration.
+- Immediate language switching across workspace browsing, editing, launch reports, settings, accessible labels, and usage dates.
+- Translated tray menus, application menus, and native file-picker labels.
+- Local language preferences stored in SQLite and restored on restart.
+- Safe schema migration preserving existing workspaces, items, launch order, and usage history.
+- Regression coverage for translations, preference persistence, schema upgrades, and desktop language switching.
 
 ## Download
 
-- `ContextDock-Setup-0.1.0-x64.exe` — installer for Windows 10/11 x64.
-- `ContextDock-Portable-0.1.0-x64.exe` — desktop app without installation.
+- `ContextDock-Setup-0.2.0-x64.exe` — Windows 10/11 x64 installer.
+- `ContextDock-Portable-0.2.0-x64.exe` — portable desktop executable.
+- `SHA256SUMS.txt` — checksums for both builds.
 
-The builds are unsigned. Windows may show an unknown-publisher or SmartScreen
-warning. Download only from this repository's release page. The portable app uses
-the same per-user local database as the installed app.
+The builds are unsigned. Windows may display an unknown-publisher or SmartScreen prompt.
 
-## Scope
+One build includes all three languages. Workspace names, descriptions, paths, and arguments stay exactly as entered. CLI and MCP command/protocol names remain stable.
 
-Resume opens saved resources using Windows defaults and reports whether launch
-requests were accepted. It does not restore window layouts, browser sessions,
-document pages, or editor positions. No cloud backend, account, AI analysis, or
-activity monitoring is included.
-
-See the [README](https://github.com/tonghzhang/ContextDock#readme) for installation, development, CLI, and MCP setup.
+See the [README](https://github.com/tonghzhang/ContextDock#readme) for installation and usage.

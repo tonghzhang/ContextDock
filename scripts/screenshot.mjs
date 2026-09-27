@@ -142,6 +142,27 @@ try {
   });
   console.log('Saved docs/screenshots/workspace.png using fictional sample workspaces.');
 
+  if (process.argv.includes('--languages')) {
+    for (const language of ['zh-CN', 'ja']) {
+      const updated = await page.evaluate(
+        (value) => window.contextdock.setLanguage(value),
+        language,
+      );
+      assert.equal(updated.ok, true);
+      await page.reload();
+      await page.getByRole('heading', { name: 'ModelMux', exact: true }).waitFor();
+      await page.waitForFunction((value) => document.documentElement.lang === value, language);
+      await page.evaluate(() => document.fonts.ready);
+      await page.screenshot({
+        path: path.join(outputDirectory, 'workspace-' + language + '.png'),
+        animations: 'disabled',
+      });
+    }
+    await page.evaluate(() => window.contextdock.setLanguage('en'));
+    await page.reload();
+    await page.getByRole('heading', { name: 'ModelMux', exact: true }).waitFor();
+  }
+
   if (compact) {
     const compactDirectory = path.join(workDirectory, 'screenshots');
     await mkdir(compactDirectory, { recursive: true });
