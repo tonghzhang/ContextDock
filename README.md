@@ -1,103 +1,104 @@
-# ContextDock
+<a id="readme-top"></a>
 
-**Save your workspace. Resume it in one click.**
+<div align="center">
+  <a href="https://github.com/tonghzhang/ContextDock">
+    <img src="resources/icon.png" alt="ContextDock logo" width="80" height="80">
+  </a>
 
-ContextDock is a local Windows desktop app for bookmarking a working environment:
-applications, files, folders, project directories, and websites. Save the resources
-for a project once, then search for its workspace and press **Resume** to reopen them.
+  <h1>ContextDock</h1>
 
-Built with Electron, React, TypeScript, Vite, and SQLite. The desktop, CLI, and local
-MCP server share one workspace service and one database. No account, cloud backend,
-AI features, or activity tracking. Optional manual GitHub import/export uses your own private repository.
+  <p><strong>Save your workspace. Resume it in one click.</strong></p>
+  <p>A Windows desktop app for reopening your apps, files, folders, and websites together.</p>
 
-![ContextDock workspace view](docs/screenshots/workspace.png)
+  <p>
+    <a href="https://github.com/tonghzhang/ContextDock/releases/latest"><strong>Download for Windows</strong></a>
+    ·
+    <a href="#getting-started">Getting Started</a>
+    ·
+    <a href="https://github.com/tonghzhang/ContextDock/issues/new">Report a Bug</a>
+    ·
+    <a href="https://github.com/tonghzhang/ContextDock/issues/new">Request a Feature</a>
+  </p>
 
-<!-- Screenshot source: docs/screenshots/workspace.png -->
+  <p>
+    <a href="https://github.com/tonghzhang/ContextDock/actions/workflows/ci.yml"><img src="https://github.com/tonghzhang/ContextDock/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status"></a>
+    <a href="https://github.com/tonghzhang/ContextDock/releases/latest"><img src="https://img.shields.io/github/v/release/tonghzhang/ContextDock" alt="Latest release"></a>
+    <a href="#prerequisites"><img src="https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-0078D4" alt="Windows 10 and 11"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/tonghzhang/ContextDock" alt="MIT license"></a>
+  </p>
+</div>
 
-## Features
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li><a href="#about-the-project">About the Project</a></li>
+    <li><a href="#getting-started">Getting Started</a></li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#development">Development</a></li>
+    <li><a href="#project-structure">Project Structure</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
 
-- Switch the desktop between English, Simplified Chinese, and Japanese in Settings.
-- Create, rename, describe, duplicate, delete, and search workspaces; see when each was last used.
-- Add applications, files, folders, and HTTP/HTTPS URLs. Native Windows pickers select local targets.
-- Edit item names and targets, supply application arguments, enable or disable items, and reorder launches.
-- Resume enabled items in order: URLs in your default browser, files in their associated app, folders in Explorer, and `.exe` applications with separate arguments.
-- Review a result for every attempted launch. A missing target or other failure does not prevent later items from opening.
-- Open the app with **Ctrl+Alt+Space**, or **Ctrl+Shift+Space** if the first shortcut is unavailable. Inside the app, **Ctrl+K**, type, and **Enter** resumes the selected result.
-- Close the window to keep ContextDock available in the tray. Use the tray's **Quit ContextDock** command to exit.
-- Keep workspaces in local SQLite with versioned schema migrations; access them through the desktop, CLI, or six MCP tools.
+## About the Project
 
-## Install and use
+[![ContextDock workspace view](docs/screenshots/workspace.png)](docs/screenshots/workspace.png)
 
-Download a Windows x64 build from [GitHub Releases](https://github.com/tonghzhang/ContextDock/releases):
+ContextDock saves the resources you need for a task as a workspace. Add your editor,
+project folder, reference documents, and browser tabs once, then search for that
+workspace and press **Resume** to open them again.
 
-- **`ContextDock-Setup-0.2.0-x64.exe`** installs the app, shortcuts, CLI, and MCP wrappers. No separate Node.js installation is needed.
-- **`ContextDock-Portable-0.2.0-x64.exe`** runs the desktop app without installation. It uses the same local data directory as the installed app; data is not stored beside the portable executable.
+Workspaces live in a local SQLite database shared by the desktop app, CLI, and MCP
+server. You can also carry a workspace to another computer using a single
+`.contextdock` file, with optional storage in your own private GitHub repository.
 
-Target platforms: **Windows 10 and Windows 11, x64**. This release is unsigned;
-Windows may show an unknown-publisher or SmartScreen warning. Verify that you
-downloaded it from this repository's release page before proceeding.
+### Features
 
-1. Launch ContextDock and create a workspace.
-2. Choose **Add Item**, select its type, and browse for a local target or enter a URL.
-3. For an application, add arguments individually if needed. Arrange the item order.
-4. Click **Resume Workspace**, or return to the workspace list, search, and press **Enter**.
+- **Workspace management** — create, edit, duplicate, and search workspaces.
+- **One-click Resume** — launch enabled resources in order, with individual success and failure results.
+- **Native file pickers** — select applications, files, and folders; supply application arguments when needed.
+- **Keyboard shortcuts** — open ContextDock globally and search workspaces with **Ctrl+K**.
+- **Portable workspaces** — export configuration and selected files, import a package, and locate missing paths.
+- **Optional GitHub storage** — manually upload and download packages from a private repository.
+- **Three interface languages** — English, Simplified Chinese, and Japanese.
+- **CLI and MCP** — manage and open the same workspaces from your terminal or MCP client.
 
-A successful result means Windows accepted the launch request. ContextDock does not
-wait for websites to load or applications to become ready. It reopens resources;
-it does not restore document pages, editor cursors, or window positions.
+### Built With
 
-## Language
+[Electron](https://www.electronjs.org/) · [React](https://react.dev/) ·
+[TypeScript](https://www.typescriptlang.org/) · [Vite](https://vite.dev/) ·
+[SQLite](https://www.sqlite.org/) · [Lucide](https://lucide.dev/)
 
-Open **Settings → Language** and choose **English**, **简体中文**, or **日本語**.
-The change applies immediately to the desktop and native menus, and is saved locally
-in SQLite for the next launch. Existing installations keep English until you select
-another language.
+## Getting Started
 
-中文：打开 **设置 → 语言**，选择 **简体中文**。更改即时生效，重启后保留。
-日本語：**設定 → 言語** で **日本語** を選択します。変更はすぐに反映され、次回起動時も保持されます。
+### Prerequisites
 
-Workspace names, descriptions, paths, and arguments are never translated. CLI/MCP
-command and protocol names remain unchanged.
+- **To use the desktop app:** Windows 10 or 11, x64.
+- **To develop or run from source:** Windows, Node.js **24 or newer**, npm, and Git.
 
-Screenshots: [简体中文](docs/screenshots/workspace-zh-CN.png) · [日本語](docs/screenshots/workspace-ja.png)
+### Installation
 
-## Workspace import and export
+Download a build from [GitHub Releases][releases-url]:
 
-Use **Export** in a workspace to save one `.contextdock` file. Include selected files,
-or export configuration only. On another computer, use **Import**, review the
-preview, and locate missing paths. Missing items remain disabled without blocking
-other resources. Existing workspace IDs can be replaced or imported as copies.
+| Build                                | Use                                                       |
+| ------------------------------------ | --------------------------------------------------------- |
+| `ContextDock-Setup-0.2.0-x64.exe`    | Install the desktop app, shortcuts, and CLI/MCP wrappers. |
+| `ContextDock-Portable-0.2.0-x64.exe` | Run the desktop app without installation.                 |
 
-For private-repository transfers, configure **Settings → GitHub connection**, then
-use **Export to GitHub** or **Import from GitHub**. Tokens are entered in a native
-Windows dialog and encrypted on this computer; the renderer never receives them.
+Both builds include their runtime; a separate Node.js installation is not required.
+The portable build saves data in the same local data directory as the installed app.
 
-See [the transfer guide](docs/transfer.md) for setup, format, limits, and behavior.
-These changes are currently available in the source build; the v0.2.0 installers
-linked above predate the import/export feature.
+> [!NOTE]
+> The v0.2.0 downloads include language switching. Workspace import/export and
+> GitHub storage are currently available in the source build below.
 
-## Local data
+The Windows builds are unsigned and may display an unknown-publisher warning.
 
-All three interfaces use `%LOCALAPPDATA%\ContextDock\contextdock.sqlite` by default.
-Development mode uses this same location. Workspace data stays local unless you
-explicitly export a package or upload one to GitHub. Opening a bookmarked website
-naturally connects to that website.
-
-Set `CONTEXTDOCK_DATA_DIR` to an **absolute directory path** for an isolated profile.
-Use the same value in each desktop, CLI, and MCP process that should share that profile:
-
-```powershell
-$env:CONTEXTDOCK_DATA_DIR = Join-Path $PWD "work\my-profile"
-npm run dev
-```
-
-CLI and MCP also accept `--data-dir <absolute-directory>`. To back up data, quit the
-desktop and stop CLI/MCP processes, then copy the entire data directory. Removing a
-workspace or item deletes its bookmark records, never the referenced files.
-
-## Development
-
-Install **Node.js 24 or newer** and Git on Windows, then:
+### Run from Source
 
 ```powershell
 git clone https://github.com/tonghzhang/ContextDock.git
@@ -106,97 +107,68 @@ npm ci
 npm run dev
 ```
 
-The renderer supports live updates. Restart `npm run dev` after changing the desktop
-process, preload, or core service. The app requires no API keys or external services.
+For a production build:
 
 ```powershell
-npm run lint
-npm run format:check
-npm run typecheck
-npm test
 npm run build
 npm start
 ```
 
-`npm run verify` runs lint, format checking, type checking, tests, and the production build.
-`npm run format` formats source files. Tests cover the workspace service, migrations,
-launcher, CLI, and MCP protocol with isolated local databases and controlled launchers.
-The Windows CI workflow runs the static checks, tests, and production build.
+## Usage
 
-Run the desktop smoke test on Windows after building:
+1. Create a workspace, such as **ModelMux**.
+2. Select **Add Item** and add an application, file, folder, or URL.
+3. Arrange the launch order and disable anything you do not need.
+4. Click **Resume Workspace**, or press **Ctrl+K**, search, and press **Enter**.
 
-```powershell
-npm run test:e2e
-npm run test:e2e:languages
-npm run test:e2e:transfer
-```
+URLs use your default browser, files use their associated applications, and folders
+open in Explorer. A failed item does not stop the remaining items.
 
-It uses an isolated profile under `work/` and checks desktop editing, ordered partial
-Resume, shortcuts, restart persistence, and shared CLI/MCP data. Native picker results
-are supplied deterministically. Set `CONTEXTDOCK_E2E_DEV=1` to test against the Vite
-server, or `CONTEXTDOCK_E2E_EXE` to the absolute path of the unpacked release executable
-to test the packaged runtime.
+| Shortcut                | Action                                                             |
+| ----------------------- | ------------------------------------------------------------------ |
+| `Ctrl+Alt+Space`        | Show ContextDock; falls back to `Ctrl+Shift+Space` if unavailable. |
+| `Ctrl+K`                | Focus workspace search.                                            |
+| `↑` / `↓`, then `Enter` | Select and resume a search result.                                 |
 
-## Build Windows releases
+Closing the window keeps the app in the system tray. Use **Quit ContextDock** to exit.
 
-```powershell
-npm run dist
-```
+### Languages
 
-Run this on Windows to produce an installer and portable executable in `release/`.
-The desktop bundle is generated in `dist/`; `npm start` runs that production build.
-The installed app includes its runtime, so desktop, CLI, and MCP operation does not
-require a separate Node.js installation. Building from source does require Node.js.
+Choose **Settings → Language → English / 简体中文 / 日本語**.
+Your selection is saved for the next launch.
 
-## CLI
+Screenshots: [English](docs/screenshots/workspace.png) ·
+[简体中文](docs/screenshots/workspace-zh-CN.png) · [日本語](docs/screenshots/workspace-ja.png)
 
-In the app's installation directory, use the bundled wrapper:
+### Import and Export
 
-```powershell
-.\contextdock.cmd list
-.\contextdock.cmd open "ModelMux"
-```
+Choose **Export** in a workspace to save one `.contextdock` package, optionally
+including selected files. On another computer, choose **Import**, review the items,
+and locate missing paths. Unresolved items stay disabled until you locate them.
 
-Add that directory to your user `PATH` to invoke `contextdock` from any terminal.
-For a source checkout, run `npm run build`, then `npm run cli -- <command>`; optionally
-run `npm link` to make the same `contextdock` command available.
+For GitHub transfers, configure **Settings → GitHub Connection** with a private
+repository and a fine-grained personal access token. Transfers are manual.
+See the [import/export guide](docs/transfer.md) for setup and package limits.
+
+### CLI
+
+After building from source:
 
 ```powershell
-contextdock create "ModelMux" --description "Gateway development"
-contextdock add-url "ModelMux" "https://redis.io" --name "Redis documentation"
-contextdock add-file "ModelMux" "C:\Documents\gateway.pdf"
-contextdock add-folder "ModelMux" "C:\Projects\ModelMux"
-contextdock add-app "ModelMux" "C:\Applications\Editor\editor.exe" --arg "C:\Projects\ModelMux"
-contextdock list
-contextdock show "ModelMux"
-contextdock open "ModelMux"
+npm run cli -- create "ModelMux"
+npm run cli -- add-url "ModelMux" "https://redis.io"
+npm run cli -- list
+npm run cli -- show "ModelMux"
+npm run cli -- open "ModelMux"
 ```
 
-Paths in examples are illustrative; substitute existing paths on your computer.
-Use `--arg=--new-window` to pass an application flag and repeat `--arg` for separate
-arguments. Workspace selectors accept IDs or case-insensitive names. `--json`
-provides machine-readable output; a partial launch failure returns the complete
-report and exit code `1`. See [all CLI commands and options](docs/cli.md).
+The installed app includes `contextdock.cmd`; run it from the installation directory
+or add that directory to your `PATH`. See the [CLI reference](docs/cli.md).
 
-## MCP
+### MCP
 
-Configure a trusted MCP client to start ContextDock as a local **stdio** server.
-With the installed app, no external Node.js is needed. Replace the illustrative
-installation paths in this configuration with your own:
-
-```json
-{
-  "mcpServers": {
-    "contextdock": {
-      "command": "C:/Applications/ContextDock/ContextDock.exe",
-      "args": ["C:/Applications/ContextDock/resources/cli/mcp.cjs"],
-      "env": { "ELECTRON_RUN_AS_NODE": "1" }
-    }
-  }
-}
-```
-
-For a source checkout after `npm run build`, use this entry instead:
+Build the project, then add this local stdio server to your MCP client.
+Replace the example path with your checkout's absolute path.
 
 ```json
 {
@@ -209,55 +181,109 @@ For a source checkout after `npm run build`, use this entry instead:
 }
 ```
 
-Paths with spaces are supported as single JSON values; do not insert shell quoting
-inside them. Do not use `npm` as the MCP command, because its output can interfere
-with the stdio protocol. The installed `contextdock-mcp.cmd` wrapper is also provided
-for terminal use.
-
 Available tools: `list_workspaces`, `get_workspace`, `open_workspace`,
 `create_workspace`, `add_workspace_item`, and `remove_workspace_item`.
-A connected client can edit saved workspaces and launch their configured local
-applications; ask the user before resuming a workspace. See [tool schemas, results,
-and profile configuration](docs/mcp.md).
 
-## Project structure
+See the [MCP guide](docs/mcp.md) for tool arguments and installed-app configuration.
+
+### Local Data
+
+Workspace data is stored in `%LOCALAPPDATA%\ContextDock\contextdock.sqlite`.
+The desktop, CLI, and MCP server use the same database. Set `CONTEXTDOCK_DATA_DIR`
+to an absolute directory to use a separate profile.
+
+To back up your data, stop ContextDock and its CLI/MCP processes, then copy the
+entire data directory. Removing a bookmark does not delete its referenced files.
+
+## Development
+
+```powershell
+npm ci
+npm run dev
+```
+
+The renderer supports live updates. Restart the development process after changing
+the Electron main process, preload, or core service.
+
+| Command                      | Purpose                                                                           |
+| ---------------------------- | --------------------------------------------------------------------------------- |
+| `npm run verify`             | Run lint, formatting checks, type checking, unit tests, and the production build. |
+| `npm run format`             | Format the codebase.                                                              |
+| `npm run test:e2e`           | Test desktop workflows and shared CLI/MCP data.                                   |
+| `npm run test:e2e:languages` | Test language switching and persistence.                                          |
+| `npm run test:e2e:transfer`  | Test workspace export, import, relocation, and Resume.                            |
+| `npm run test:e2e:token`     | Test the native password dialog with a fake token.                                |
+
+Run desktop tests after `npm run build` on an interactive Windows desktop.
+Tests use isolated profiles under `work/`.
+
+### Build
+
+```powershell
+npm run dist
+```
+
+Run on Windows to generate an x64 installer and portable executable in `release/`.
+The production desktop, CLI, and MCP bundles are generated in `dist/`.
+
+## Project Structure
 
 ```text
 src/
-  core/        Workspace service, validation, SQLite migrations, Windows launcher
-  transfer/    Shared ZIP format, import/export service, Local and GitHub providers
-  shared/      Types shared by all interfaces
-  desktop/     Electron main process, native dialogs, tray, secure preload bridge
-  renderer/    React workspace list and editor
-  cli/         Command parsing and terminal presentation
-  mcp/         MCP schemas, adapter, and stdio entry point
-tests/         Core, launcher, CLI, and MCP tests
-scripts/       Development, production build, and smoke-test tooling
-resources/     App icons and installed command wrappers
-docs/          Interface guides, screenshots, and release notes
+├── core/        Workspace service, SQLite migrations, validation, and launcher
+├── desktop/     Electron main process, native dialogs, credentials, and IPC
+├── renderer/    React interface
+├── transfer/    Shared package format and local/GitHub import-export
+├── cli/         Command-line interface
+├── mcp/         Local MCP server
+└── shared/      Shared types and translations
+tests/           Unit and integration tests
+scripts/         Development, build, and desktop test scripts
+docs/            Usage guides and screenshots
+resources/       Icons and Windows command wrappers
 ```
 
-```text
-Desktop UI ─┐
-CLI ────────┼── Workspace Service ── SQLite / Windows Launcher
-MCP Server ─┘
-```
-
-Business rules live in the service, not React components or transport handlers.
-The renderer uses a narrow IPC bridge; it has no direct Node.js or database access.
+Desktop, CLI, and MCP call the same Workspace Service. Import/export uses one
+transfer service for local files and GitHub packages.
 
 ## Roadmap
 
-- Capture Current Workspace
-- Browser Extension
-- Window Layout Restore
-- Workspace Version History
-- Agent Integration
-- Cross-device Sync
+- [ ] Capture Current Workspace
+- [ ] Browser Extension
+- [ ] Window Layout Restore
+- [ ] Workspace Version History
+- [ ] Agent Integration
+- [ ] Cross-device Sync
 
-These are future directions, not features included in v0.2.0. The current release
-focuses on reliable manual bookmarks and one-click Resume.
+These are future directions. Current cross-device transfer is manual import/export.
+
+## Contributing
+
+Bug reports, documentation fixes, and focused pull requests are welcome.
+
+1. [Open an issue][issues-url] to discuss a bug or proposed change.
+2. Fork the repository and create a branch for your changes.
+3. Add relevant tests and run `npm run verify`.
+4. Open a pull request describing the change and how you tested it.
+
+For interface changes, include screenshots and update English, Chinese, and Japanese
+translations together.
 
 ## License
 
-[MIT](LICENSE)
+Licensed under the **MIT License**. See [LICENSE](LICENSE).
+
+## Contact
+
+Maintainer: [@tonghzhang](https://github.com/tonghzhang)
+
+Questions and bug reports: [GitHub Issues][issues-url]
+
+## Acknowledgments
+
+README structure adapted from [Best-README-Template](https://github.com/othneildrew/Best-README-Template).
+
+<p align="right"><a href="#readme-top">Back to top ↑</a></p>
+
+[releases-url]: https://github.com/tonghzhang/ContextDock/releases
+[issues-url]: https://github.com/tonghzhang/ContextDock/issues
