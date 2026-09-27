@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 import type {
   ItemInput,
+  Language,
   Launcher,
   LaunchReport,
   Workspace,
@@ -39,6 +40,26 @@ export class WorkspaceService {
     private readonly launcher: Launcher,
   ) {}
 
+  getLanguage(): Language {
+    const value = this.database
+      .prepare('SELECT value FROM app_settings WHERE key = ?')
+      .get('language')?.value;
+    return value === 'en' || value === 'zh-CN' || value === 'ja' ? value : 'en';
+  }
+
+  setLanguage(language: Language): Language {
+    if (language !== 'en' && language !== 'zh-CN' && language !== 'ja') {
+      throw new WorkspaceError('Choose English, Simplified Chinese, or Japanese.');
+    }
+    return transaction(this.database, () => {
+      this.database
+        .prepare(
+          'INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+        )
+        .run('language', language);
+      return language;
+    });
+  }
   listWorkspaces(): Workspace[] {
     const rows = this.database
       .prepare(

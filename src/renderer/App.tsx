@@ -22,7 +22,7 @@ import {
   itemSummary,
   relativeDate,
   resultOf,
-  typeNames,
+  getTypeNames,
   workspaceMatches,
 } from './api';
 import {
@@ -35,6 +35,9 @@ import {
   Spinner,
   WorkspaceDialog,
 } from './dialogs';
+import { useI18n } from './i18n';
+
+type Announcement = { message: string; values?: Record<string, string | number> };
 
 type DialogState =
   | { kind: 'workspace'; workspace?: Workspace }
@@ -46,12 +49,13 @@ type DialogState =
   | null;
 
 export function App() {
+  const { language, t } = useI18n();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [announcement, setAnnouncement] = useState('');
+  const [error, setError] = useState<unknown>(null);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [runningId, setRunningId] = useState<string | null>(null);
@@ -74,7 +78,7 @@ export function App() {
         return loaded[0]?.id ?? null;
       });
     } catch (caught) {
-      if (sequence === loadSequence.current) setError(errorText(caught));
+      if (sequence === loadSequence.current) setError(caught);
     } finally {
       if (sequence === loadSequence.current) setLoading(false);
     }
@@ -85,7 +89,7 @@ export function App() {
     void refresh();
     void resultOf(desktop().getAppInfo())
       .then(setInfo)
-      .catch((caught: unknown) => setError(errorText(caught)));
+      .catch((caught: unknown) => setError(caught));
     const onFocus = () => void refresh();
     window.addEventListener('focus', onFocus);
     return () => {
@@ -106,15 +110,15 @@ export function App() {
       if (operationRunning.current) return;
       operationRunning.current = true;
       setRunningId(workspace.id);
-      setError('');
-      setAnnouncement(`Opening ${workspace.name}.`);
+      setError(null);
+      setAnnouncement({ message: 'Opening {name}.', values: { name: workspace.name } });
       try {
         const report = await resultOf(desktop().resumeWorkspace(workspace.id));
         await refresh(workspace.id);
         setDialog({ kind: 'report', report });
-        setAnnouncement(`Finished opening ${workspace.name}.`);
+        setAnnouncement({ message: 'Finished opening {name}.', values: { name: workspace.name } });
       } catch (caught) {
-        setError(errorText(caught));
+        setError(caught);
       } finally {
         operationRunning.current = false;
         setRunningId(null);
@@ -171,17 +175,21 @@ export function App() {
     }
   }
 
-  async function mutate(action: () => Promise<unknown>, message: string, preferredId?: string) {
+  async function mutate(
+    action: () => Promise<unknown>,
+    message: Announcement,
+    preferredId?: string,
+  ) {
     if (operationRunning.current) return;
     operationRunning.current = true;
     setActionBusy(true);
-    setError('');
+    setError(null);
     try {
       await action();
       await refresh(preferredId);
       setAnnouncement(message);
     } catch (caught) {
-      setError(errorText(caught));
+      setError(caught);
     } finally {
       operationRunning.current = false;
       setActionBusy(false);
@@ -189,11 +197,14 @@ export function App() {
   }
 
   async function duplicate(workspace: Workspace) {
-    await mutate(async () => {
-      const copy = await resultOf(desktop().duplicateWorkspace(workspace.id));
-      setQuery('');
-      setSelectedId(copy.id);
-    }, 'Workspace duplicated.');
+    await mutate(
+      async () => {
+        const copy = await resultOf(desktop().duplicateWorkspace(workspace.id));
+        setQuery('');
+        setSelectedId(copy.id);
+      },
+      { message: 'Workspace duplicated.' },
+    );
   }
 
   function moveItem(workspace: Workspace, item: WorkspaceItem, direction: -1 | 1) {
@@ -210,7 +221,7 @@ export function App() {
             items.map((candidate) => candidate.id),
           ),
         ),
-      'Launch order updated.',
+      { message: 'Launch order updated.' },
       workspace.id,
     );
   }
@@ -219,23 +230,25 @@ export function App() {
     return (
       <main className="desktop-required">
         <Logo large />
-        <h1>ContextDock lives on your desktop.</h1>
+        <h1>{t('ContextDock lives on your desktop.')}</h1>
         <p>
-          Open the installed app to save your apps, files, folders, and websites in a workspace.
+          {t(
+            'Open the installed app to save your apps, files, folders, and websites in a workspace.',
+          )}
         </p>
-        <p className="muted">Your workspaces stay on your computer.</p>
+        <p className="muted">{t('Your workspaces stay on your computer.')}</p>
       </main>
     );
   }
 
   return (
     <div className="app-shell">
-      <aside className="sidebar" aria-label="Main navigation">
+      <aside className="sidebar" aria-label={t('Main navigation')}>
         <div className="brand">
           <Logo />
           <span>ContextDock</span>
         </div>
-        <div className="sidebar-section-label">Your space</div>
+        <div className="sidebar-section-label">{t('Your space')}</div>
         <button
           className="nav-button active"
           onClick={() => {
@@ -243,25 +256,25 @@ export function App() {
             searchRef.current?.focus();
           }}
           aria-current="page"
-          title="All workspaces"
+          title={t('All workspaces')}
         >
           <Layers3 size={18} aria-hidden="true" />
-          <span>Workspaces</span>
+          <span>{t('Workspaces')}</span>
           <span className="nav-count">{workspaces.length}</span>
         </button>
         <div className="sidebar-bottom">
           <div className="local-note">
             <span className="local-dot" />
-            Stored on this computer
+            {t('Stored on this computer')}
           </div>
           <button
             className="nav-button settings-button"
             onClick={() => setDialog({ kind: 'settings' })}
             disabled={busy}
-            title="About and shortcuts"
+            title={t('Settings')}
           >
             <Settings2 size={17} aria-hidden="true" />
-            <span>About & shortcuts</span>
+            <span>{t('Settings')}</span>
           </button>
           <span className="version">{info ? `v${info.version}` : 'ContextDock'}</span>
         </div>
@@ -269,8 +282,8 @@ export function App() {
       <main className="main-content">
         <header className="app-header">
           <div>
-            <h1>Workspaces</h1>
-            <p>Everything you need, ready when you are.</p>
+            <h1>{t('Workspaces')}</h1>
+            <p>{t('Everything you need, ready when you are.')}</p>
           </div>
           <button
             className="button button-secondary new-workspace-button"
@@ -278,35 +291,39 @@ export function App() {
             disabled={busy}
           >
             <Plus size={16} aria-hidden="true" />
-            New workspace
+            {t('New workspace')}
           </button>
         </header>
-        {error && (
+        {error !== null && (
           <div className="global-error" role="alert">
-            <span>{error}</span>
+            <span>{errorText(error, language)}</span>
             <button
               className="text-button"
               onClick={() => {
-                setError('');
+                setError(null);
                 void refresh();
               }}
             >
-              Reload
+              {t('Reload')}
             </button>
-            <button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}>
+            <button
+              className="icon-button"
+              aria-label={t('Dismiss error')}
+              onClick={() => setError(null)}
+            >
               <X size={16} aria-hidden="true" />
             </button>
           </div>
         )}
         <div className="workspace-layout">
-          <section className="library" aria-label="Workspace library">
+          <section className="library" aria-label={t('Workspace library')}>
             <div className="search-wrap">
               <Search size={17} aria-hidden="true" />
               <input
                 ref={searchRef}
                 type="search"
-                aria-label="Search workspaces"
-                placeholder="Search workspaces…"
+                aria-label={t('Search workspaces')}
+                placeholder={t('Search workspaces…')}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={searchKeys}
@@ -317,7 +334,7 @@ export function App() {
               {query ? (
                 <button
                   className="icon-button clear-search"
-                  aria-label="Clear search"
+                  aria-label={t('Clear search')}
                   onClick={() => {
                     setQuery('');
                     searchRef.current?.focus();
@@ -330,17 +347,17 @@ export function App() {
               )}
             </div>
             <div className="library-heading">
-              <span>{query.trim() ? 'Search results' : 'All workspaces'}</span>
+              <span>{t(query.trim() ? 'Search results' : 'All workspaces')}</span>
               <span>{filtered.length}</span>
             </div>
             <div className="workspace-list-scroll">
               {loading ? (
                 <div className="library-empty" role="status">
                   <Spinner />
-                  <p>Loading workspaces…</p>
+                  <p>{t('Loading workspaces…')}</p>
                 </div>
               ) : filtered.length > 0 ? (
-                <ul className="workspace-list" aria-label="Workspaces">
+                <ul className="workspace-list" aria-label={t('Workspaces')}>
                   {filtered.map((workspace) => (
                     <li
                       id={`workspace-${workspace.id}`}
@@ -349,7 +366,7 @@ export function App() {
                     >
                       <button
                         className="workspace-select"
-                        aria-label={`Open details for ${workspace.name}`}
+                        aria-label={t('Open details for {name}', { name: workspace.name })}
                         aria-pressed={selected?.id === workspace.id}
                         onClick={() => setSelectedId(workspace.id)}
                       >
@@ -358,23 +375,25 @@ export function App() {
                         </span>
                         <span className="workspace-card-content">
                           <strong title={workspace.name}>{workspace.name}</strong>
-                          <span className="workspace-summary">{itemSummary(workspace.items)}</span>
+                          <span className="workspace-summary">
+                            {itemSummary(workspace.items, language)}
+                          </span>
                           <span
                             className="workspace-last-used"
                             title={
                               workspace.lastUsedAt
-                                ? new Date(workspace.lastUsedAt).toLocaleString()
+                                ? new Date(workspace.lastUsedAt).toLocaleString(language)
                                 : undefined
                             }
                           >
-                            {relativeDate(workspace.lastUsedAt)}
+                            {relativeDate(workspace.lastUsedAt, language)}
                           </span>
                         </span>
                       </button>
                       <button
                         className="quick-resume"
-                        aria-label={`Resume ${workspace.name}`}
-                        title={`Resume ${workspace.name}`}
+                        aria-label={t('Resume {name}', { name: workspace.name })}
+                        title={t('Resume {name}', { name: workspace.name })}
                         onClick={() => void resume(workspace)}
                         disabled={busy || workspace.items.every((item) => !item.enabled)}
                       >
@@ -396,11 +415,13 @@ export function App() {
                 <div className="library-empty">
                   <Search size={22} strokeWidth={1.5} aria-hidden="true" />
                   <p>
-                    {query.trim() ? 'No matching workspaces' : 'Your workspaces will appear here'}
+                    {t(
+                      query.trim() ? 'No matching workspaces' : 'Your workspaces will appear here',
+                    )}
                   </p>
                   {query.trim() && (
                     <button className="text-button" onClick={() => setQuery('')}>
-                      Clear search
+                      {t('Clear search')}
                     </button>
                   )}
                 </div>
@@ -409,10 +430,10 @@ export function App() {
             <div className="search-hint" id="search-hint">
               <span>
                 <kbd>↑</kbd>
-                <kbd>↓</kbd> select
+                <kbd>↓</kbd> {t('select')}
               </span>
               <span>
-                <kbd>Enter</kbd> resume
+                <kbd>Enter</kbd> {t('resume')}
               </span>
             </div>
           </section>
@@ -442,7 +463,10 @@ export function App() {
                         enabled: !item.enabled,
                       }),
                     ),
-                  `${item.name} ${item.enabled ? 'disabled' : 'enabled'}.`,
+                  {
+                    message: item.enabled ? '{name} disabled.' : '{name} enabled.',
+                    values: { name: item.name },
+                  },
                   selected.id,
                 )
               }
@@ -452,16 +476,20 @@ export function App() {
             <section className="welcome-panel">
               <div className="welcome-content">
                 <Logo large />
-                <span className="eyebrow">A place to pick up again</span>
-                <h2>{query.trim() ? 'Find your next workspace.' : 'Make room for your work.'}</h2>
+                <span className="eyebrow">{t('A place to pick up again')}</span>
+                <h2>
+                  {t(query.trim() ? 'Find your next workspace.' : 'Make room for your work.')}
+                </h2>
                 <p>
-                  {query.trim()
-                    ? 'Try another name, or clear your search to see all workspaces.'
-                    : 'Bring your apps, files, folders, and websites together. Open them all with one click.'}
+                  {t(
+                    query.trim()
+                      ? 'Try another name, or clear your search to see all workspaces.'
+                      : 'Bring your apps, files, folders, and websites together. Open them all with one click.',
+                  )}
                 </p>
                 {query.trim() ? (
                   <button className="button button-secondary" onClick={() => setQuery('')}>
-                    Clear search
+                    {t('Clear search')}
                   </button>
                 ) : (
                   <button
@@ -470,13 +498,13 @@ export function App() {
                     disabled={busy || loading}
                   >
                     <Plus size={17} aria-hidden="true" />
-                    Create your first workspace
+                    {t('Create your first workspace')}
                   </button>
                 )}
                 <div className="welcome-footnote">
                   <Keyboard size={15} aria-hidden="true" />
                   <span>
-                    <kbd>Ctrl</kbd> + <kbd>K</kbd> to find a workspace
+                    <kbd>Ctrl</kbd> + <kbd>K</kbd> {t('to find a workspace')}
                   </span>
                 </div>
               </div>
@@ -485,7 +513,7 @@ export function App() {
         </div>
       </main>
       <span className="sr-only" aria-live="polite" aria-atomic="true">
-        {announcement}
+        {announcement ? t(announcement.message, announcement.values) : ''}
       </span>
       {dialog?.kind === 'workspace' && (
         <WorkspaceDialog
@@ -495,7 +523,7 @@ export function App() {
             setQuery('');
             await refresh(workspace.id);
             setDialog(null);
-            setAnnouncement('Workspace saved.');
+            setAnnouncement({ message: 'Workspace saved.' });
           }}
         />
       )}
@@ -507,35 +535,39 @@ export function App() {
           onSaved={async () => {
             await refresh(dialog.workspaceId);
             setDialog(null);
-            setAnnouncement('Item saved.');
+            setAnnouncement({ message: 'Item saved.' });
           }}
         />
       )}
       {dialog?.kind === 'delete-workspace' && (
         <ConfirmDialog
-          title={`Delete “${dialog.workspace.name}”?`}
-          description="This removes the workspace and its saved items. Your files, folders, and applications stay on your computer."
-          action="Delete workspace"
+          title={t('Delete “{name}”?', { name: dialog.workspace.name })}
+          description={t(
+            'This removes the workspace and its saved items. Your files, folders, and applications stay on your computer.',
+          )}
+          action={t('Delete workspace')}
           onClose={() => setDialog(null)}
           onConfirm={async () => {
             await resultOf(desktop().deleteWorkspace(dialog.workspace.id));
             await refresh();
             setDialog(null);
-            setAnnouncement('Workspace deleted.');
+            setAnnouncement({ message: 'Workspace deleted.' });
           }}
         />
       )}
       {dialog?.kind === 'delete-item' && (
         <ConfirmDialog
-          title={`Remove “${dialog.item.name}”?`}
-          description="This removes the item from this workspace. The original resource stays where it is."
-          action="Remove item"
+          title={t('Remove “{name}”?', { name: dialog.item.name })}
+          description={t(
+            'This removes the item from this workspace. The original resource stays where it is.',
+          )}
+          action={t('Remove item')}
           onClose={() => setDialog(null)}
           onConfirm={async () => {
             await resultOf(desktop().removeItem(dialog.workspaceId, dialog.item.id));
             await refresh(dialog.workspaceId);
             setDialog(null);
-            setAnnouncement('Item removed.');
+            setAnnouncement({ message: 'Item removed.' });
           }}
         />
       )}
@@ -576,22 +608,24 @@ function WorkspaceDetail({
   onToggleItem: (item: WorkspaceItem) => void;
   onMoveItem: (item: WorkspaceItem, direction: -1 | 1) => void;
 }) {
+  const { language, t } = useI18n();
+  const typeNames = getTypeNames(language);
   const items = [...workspace.items].sort((left, right) => left.launchOrder - right.launchOrder);
   const enabled = items.filter((item) => item.enabled).length;
   return (
     <section
       className="detail-panel"
-      aria-label={`${workspace.name} workspace`}
+      aria-label={t('{name} workspace', { name: workspace.name })}
       aria-busy={running}
     >
       <div className="detail-scroll">
         <div className="detail-topline">
-          <span className="eyebrow">Workspace</span>
+          <span className="eyebrow">{t('Workspace')}</span>
           <div className="workspace-actions">
             <button
               className="icon-button"
-              aria-label="Edit workspace"
-              title="Edit workspace"
+              aria-label={t('Edit workspace')}
+              title={t('Edit workspace')}
               onClick={onEdit}
               disabled={busy}
             >
@@ -599,8 +633,8 @@ function WorkspaceDetail({
             </button>
             <button
               className="icon-button"
-              aria-label="Duplicate workspace"
-              title="Duplicate workspace"
+              aria-label={t('Duplicate workspace')}
+              title={t('Duplicate workspace')}
               onClick={onDuplicate}
               disabled={busy}
             >
@@ -609,8 +643,8 @@ function WorkspaceDetail({
             <span className="action-divider" />
             <button
               className="icon-button danger-icon"
-              aria-label="Delete workspace"
-              title="Delete workspace"
+              aria-label={t('Delete workspace')}
+              title={t('Delete workspace')}
               onClick={onDelete}
               disabled={busy}
             >
@@ -629,14 +663,16 @@ function WorkspaceDetail({
           <Clock3 size={13} aria-hidden="true" />
           <span
             title={
-              workspace.lastUsedAt ? new Date(workspace.lastUsedAt).toLocaleString() : undefined
+              workspace.lastUsedAt
+                ? new Date(workspace.lastUsedAt).toLocaleString(language)
+                : undefined
             }
           >
-            {relativeDate(workspace.lastUsedAt)}
+            {relativeDate(workspace.lastUsedAt, language)}
           </span>
           <span className="meta-dot">·</span>
           <span>
-            {items.length} {items.length === 1 ? 'item' : 'items'}
+            {t(items.length === 1 ? '{count} item' : '{count} items', { count: items.length })}
           </span>
         </div>
         <div className="launch-bar">
@@ -644,8 +680,10 @@ function WorkspaceDetail({
             <span className="launch-ready-dot" />
             <span>
               {enabled === 0
-                ? 'Add or enable an item to resume'
-                : `${enabled} ${enabled === 1 ? 'item' : 'items'} ready to open`}
+                ? t('Add or enable an item to resume')
+                : t(enabled === 1 ? '{count} item ready to open' : '{count} items ready to open', {
+                    count: enabled,
+                  })}
             </span>
           </div>
           <button
@@ -654,18 +692,21 @@ function WorkspaceDetail({
             disabled={busy || enabled === 0}
           >
             {running ? <Spinner /> : <Play size={14} fill="currentColor" aria-hidden="true" />}
-            {running ? 'Opening…' : 'Resume workspace'}
+            {t(running ? 'Opening…' : 'Resume workspace')}
           </button>
         </div>
         <div className="items-heading">
-          <h3>Items</h3>
-          <span>Opens from top to bottom</span>
+          <h3>{t('Items')}</h3>
+          <span>{t('Opens from top to bottom')}</span>
         </div>
         {items.length > 0 ? (
-          <ol className="item-list" aria-label="Workspace items in launch order">
+          <ol className="item-list" aria-label={t('Workspace items in launch order')}>
             {items.map((item, index) => (
               <li className={`item-row${item.enabled ? '' : ' item-disabled'}`} key={item.id}>
-                <span className="item-order" aria-label={`Launch order ${index + 1}`}>
+                <span
+                  className="item-order"
+                  aria-label={t('Launch order {order}', { order: index + 1 })}
+                >
                   {String(index + 1).padStart(2, '0')}
                 </span>
                 <span className={`item-type-icon type-${item.type}`} title={typeNames[item.type]}>
@@ -674,14 +715,14 @@ function WorkspaceDetail({
                 <div className="item-content">
                   <div className="item-name">
                     <strong title={item.name}>{item.name}</strong>
-                    {!item.enabled && <span className="disabled-badge">Disabled</span>}
+                    {!item.enabled && <span className="disabled-badge">{t('Disabled')}</span>}
                   </div>
                   <p className="item-target path-value" title={item.target}>
                     {item.target}
                   </p>
                   {item.type === 'application' && item.arguments.length > 0 && (
                     <p className="item-arguments path-value" title={item.arguments.join(' · ')}>
-                      <span>Args</span> {item.arguments.join(' · ')}
+                      <span>{t('Args')}</span> {item.arguments.join(' · ')}
                     </p>
                   )}
                 </div>
@@ -690,8 +731,8 @@ function WorkspaceDetail({
                     className={`enable-toggle${item.enabled ? ' enabled' : ''}`}
                     role="switch"
                     aria-checked={item.enabled}
-                    aria-label={`Enable ${item.name}`}
-                    title={item.enabled ? 'Disable item' : 'Enable item'}
+                    aria-label={t('Enable {name}', { name: item.name })}
+                    title={t(item.enabled ? 'Disable item' : 'Enable item')}
                     onClick={() => onToggleItem(item)}
                     disabled={busy}
                   >
@@ -702,8 +743,8 @@ function WorkspaceDetail({
                   <div className="item-tool-buttons">
                     <button
                       className="icon-button"
-                      aria-label={`Move ${item.name} up`}
-                      title="Move up"
+                      aria-label={t('Move {name} up', { name: item.name })}
+                      title={t('Move up')}
                       onClick={() => onMoveItem(item, -1)}
                       disabled={busy || index === 0}
                     >
@@ -711,8 +752,8 @@ function WorkspaceDetail({
                     </button>
                     <button
                       className="icon-button"
-                      aria-label={`Move ${item.name} down`}
-                      title="Move down"
+                      aria-label={t('Move {name} down', { name: item.name })}
+                      title={t('Move down')}
                       onClick={() => onMoveItem(item, 1)}
                       disabled={busy || index === items.length - 1}
                     >
@@ -720,8 +761,8 @@ function WorkspaceDetail({
                     </button>
                     <button
                       className="icon-button"
-                      aria-label={`Edit ${item.name}`}
-                      title="Edit item"
+                      aria-label={t('Edit {name}', { name: item.name })}
+                      title={t('Edit item')}
                       onClick={() => onEditItem(item)}
                       disabled={busy}
                     >
@@ -729,8 +770,8 @@ function WorkspaceDetail({
                     </button>
                     <button
                       className="icon-button danger-icon"
-                      aria-label={`Remove ${item.name}`}
-                      title="Remove item"
+                      aria-label={t('Remove {name}', { name: item.name })}
+                      title={t('Remove item')}
                       onClick={() => onRemoveItem(item)}
                       disabled={busy}
                     >
@@ -746,21 +787,21 @@ function WorkspaceDetail({
             <span className="empty-items-icon">
               <Plus size={22} strokeWidth={1.5} aria-hidden="true" />
             </span>
-            <h4>What belongs in this workspace?</h4>
+            <h4>{t('What belongs in this workspace?')}</h4>
             <p>
-              Add an app, a file, a folder, or a website.
+              {t('Add an app, a file, a folder, or a website.')}
               <br />
-              ContextDock will remember the way back.
+              {t('ContextDock will remember the way back.')}
             </p>
           </div>
         )}
         <button className="add-item-button" onClick={onAdd} disabled={busy}>
           <Plus size={17} aria-hidden="true" />
-          Add item
+          {t('Add item')}
         </button>
       </div>
       <footer className="detail-footer">
-        <span>Save your workspace. Resume it in one click.</span>
+        <span>{t('Save your workspace. Resume it in one click.')}</span>
         <span className="footer-mark">
           <Layers3 size={13} aria-hidden="true" />
         </span>

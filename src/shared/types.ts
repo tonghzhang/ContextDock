@@ -1,3 +1,4 @@
+export type Language = 'en' | 'zh-CN' | 'ja';
 export type ItemType = 'application' | 'file' | 'folder' | 'url';
 export interface WorkspaceItem {
   id: string;
@@ -57,6 +58,8 @@ export interface AppInfo {
   shortcutRegistered: boolean;
 }
 export interface DesktopApi {
+  getLanguage(): Promise<ApiResult<Language>>;
+  setLanguage(language: Language): Promise<ApiResult<Language>>;
   listWorkspaces(): Promise<ApiResult<Workspace[]>>;
   getWorkspace(id: string): Promise<ApiResult<Workspace>>;
   createWorkspace(input: WorkspaceInput): Promise<ApiResult<Workspace>>;

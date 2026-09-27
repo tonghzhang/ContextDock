@@ -1,6 +1,6 @@
 {
   "name": "contextdock",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Save your workspace. Resume it in one click.",
   "author": "ContextDock contributors",
@@ -28,7 +28,8 @@
     "mcp": "node dist/mcp.cjs",
     "dist": "npm run build && electron-builder --win nsis portable --x64 --publish never",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
-    "predist": "node -e \"require('electron')\""
+    "predist": "node -e \"require('electron')\"",
+    "test:e2e:languages": "node scripts/languages-smoke.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",

@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { AppInfo, ItemType, LaunchReport, Workspace, WorkspaceItem } from '../shared/types';
-import { desktop, errorText, resultOf, typeNames } from './api';
+import { desktop, errorText, getTypeNames, localizeError, resultOf } from './api';
+import { useI18n } from './i18n';
 
 export function ItemIcon({ type, size = 18 }: { type: ItemType; size?: number }) {
   const Icon = { application: Monitor, file: File, folder: Folder, url: Globe2 }[type];
@@ -58,6 +59,7 @@ function Modal({
   busy?: boolean;
   wide?: boolean;
 }) {
+  const { t } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
   const headingId = useId();
   const subtitleId = useId();
@@ -90,7 +92,12 @@ function Modal({
           <h2 id={headingId}>{title}</h2>
           {subtitle && <p id={subtitleId}>{subtitle}</p>}
         </div>
-        <button className="icon-button" aria-label="Close dialog" onClick={onClose} disabled={busy}>
+        <button
+          className="icon-button"
+          aria-label={t('Close dialog')}
+          onClick={onClose}
+          disabled={busy}
+        >
           <X size={18} aria-hidden="true" />
         </button>
       </div>
@@ -108,6 +115,7 @@ export function WorkspaceDialog({
   onClose: () => void;
   onSaved: (workspace: Workspace) => Promise<void>;
 }) {
+  const { language, t } = useI18n();
   const [name, setName] = useState(workspace?.name ?? '');
   const [description, setDescription] = useState(workspace?.description ?? '');
   const [busy, setBusy] = useState(false);
@@ -128,7 +136,7 @@ export function WorkspaceDialog({
       );
       await onSaved(saved);
     } catch (caught) {
-      setError(errorText(caught));
+      setError(errorText(caught, language));
     } finally {
       setBusy(false);
     }
@@ -136,21 +144,21 @@ export function WorkspaceDialog({
 
   return (
     <Modal
-      title={workspace ? 'Edit workspace' : 'New workspace'}
-      subtitle="Give this collection of apps, files, and websites a home."
+      title={workspace ? t('Edit workspace') : t('New workspace')}
+      subtitle={t('Give this collection of apps, files, and websites a home.')}
       onClose={onClose}
       busy={busy}
     >
       <form onSubmit={(event) => void save(event)}>
         <div className="dialog-body form-stack">
           <div className="field">
-            <label htmlFor={`${id}-name`}>Workspace name</label>
+            <label htmlFor={`${id}-name`}>{t('Workspace name')}</label>
             <input
               id={`${id}-name`}
               data-autofocus
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="e.g. Product website"
+              placeholder={t('e.g. Product website')}
               maxLength={120}
               required
               disabled={busy}
@@ -159,13 +167,13 @@ export function WorkspaceDialog({
           </div>
           <div className="field">
             <label htmlFor={`${id}-description`}>
-              Description <span className="optional">Optional</span>
+              {t('Description')} <span className="optional">{t('Optional')}</span>
             </label>
             <textarea
               id={`${id}-description`}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="What are you working on?"
+              placeholder={t('What are you working on?')}
               maxLength={2000}
               rows={3}
               disabled={busy}
@@ -180,11 +188,11 @@ export function WorkspaceDialog({
             onClick={onClose}
             disabled={busy}
           >
-            Cancel
+            {t('Cancel')}
           </button>
           <button className="button button-primary" type="submit" disabled={busy || !name.trim()}>
             {busy && <Spinner />}
-            {workspace ? 'Save changes' : 'Create workspace'}
+            {workspace ? t('Save changes') : t('Create workspace')}
           </button>
         </div>
       </form>
@@ -203,6 +211,8 @@ export function ItemDialog({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
+  const { language, t } = useI18n();
+  const typeNames = getTypeNames(language);
   const [type, setType] = useState<ItemType>(item?.type ?? 'application');
   const [name, setName] = useState(item?.name ?? '');
   const [target, setTarget] = useState(item?.target ?? '');
@@ -213,10 +223,16 @@ export function ItemDialog({
   const [error, setError] = useState('');
   const id = useId();
   const targetLabels: Record<ItemType, string> = {
-    application: 'Application path',
-    file: 'File path',
-    folder: 'Folder path',
-    url: 'Website address',
+    application: t('Application path'),
+    file: t('File path'),
+    folder: t('Folder path'),
+    url: t('Website address'),
+  };
+
+  const pickerLabels = {
+    application: t('Select application'),
+    file: t('Select file'),
+    folder: t('Select folder'),
   };
 
   async function selectTarget() {
@@ -231,7 +247,7 @@ export function ItemDialog({
         setName((current) => (current.trim() ? current : fileName.replace(/\.exe$/i, '')));
       }
     } catch (caught) {
-      setError(errorText(caught));
+      setError(errorText(caught, language));
     } finally {
       setPicking(false);
     }
@@ -258,7 +274,7 @@ export function ItemDialog({
       );
       await onSaved();
     } catch (caught) {
-      setError(errorText(caught));
+      setError(errorText(caught, language));
     } finally {
       setBusy(false);
     }
@@ -266,15 +282,15 @@ export function ItemDialog({
 
   return (
     <Modal
-      title={item ? 'Edit item' : 'Add item'}
-      subtitle="Choose what to open when you resume this workspace."
+      title={item ? t('Edit item') : t('Add item')}
+      subtitle={t('Choose what to open when you resume this workspace.')}
       onClose={onClose}
       busy={busy || picking}
     >
       <form onSubmit={(event) => void save(event)}>
         <div className="dialog-body form-stack">
           <fieldset className="type-fieldset" disabled={busy || picking}>
-            <legend>Item type</legend>
+            <legend>{t('Item type')}</legend>
             <div className="type-options">
               {(['application', 'file', 'folder', 'url'] as const).map((value) => (
                 <label className={`type-option${type === value ? ' active' : ''}`} key={value}>
@@ -310,7 +326,7 @@ export function ItemDialog({
                 }}
                 type={type === 'url' ? 'url' : 'text'}
                 placeholder={
-                  type === 'url' ? 'https://example.com' : 'Choose a path or paste one here'
+                  type === 'url' ? 'https://example.com' : t('Choose a path or paste one here')
                 }
                 autoComplete="off"
                 spellCheck={false}
@@ -325,25 +341,29 @@ export function ItemDialog({
                   disabled={busy || picking}
                 >
                   {picking ? <Spinner /> : <Folder size={16} aria-hidden="true" />}
-                  Select {typeNames[type].toLowerCase()}
+                  {pickerLabels[type]}
                 </button>
               )}
             </div>
             {type === 'url' && (
-              <p className="field-hint">HTTP and HTTPS links open in your default browser.</p>
+              <p className="field-hint">
+                {t('HTTP and HTTPS links open in your default browser.')}
+              </p>
             )}
             {type === 'file' && (
-              <p className="field-hint">Files open with their default Windows app.</p>
+              <p className="field-hint">{t('Files open with their default Windows app.')}</p>
             )}
-            {type === 'folder' && <p className="field-hint">Folders open in File Explorer.</p>}
+            {type === 'folder' && (
+              <p className="field-hint">{t('Folders open in File Explorer.')}</p>
+            )}
           </div>
           <div className="field">
-            <label htmlFor={`${id}-name`}>Item name</label>
+            <label htmlFor={`${id}-name`}>{t('Item name')}</label>
             <input
               id={`${id}-name`}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder={type === 'url' ? 'e.g. Documentation' : 'A name you recognize'}
+              placeholder={type === 'url' ? t('e.g. Documentation') : t('A name you recognize')}
               maxLength={120}
               required
               disabled={busy || picking}
@@ -353,22 +373,23 @@ export function ItemDialog({
           {type === 'application' && (
             <div className="field">
               <label htmlFor={`${id}-arguments`}>
-                Arguments <span className="optional">Optional</span>
+                {t('Arguments')} <span className="optional">{t('Optional')}</span>
               </label>
               <textarea
                 id={`${id}-arguments`}
                 className="path-value"
                 value={argumentText}
                 onChange={(event) => setArgumentText(event.target.value)}
-                placeholder="One argument per line"
+                placeholder={t('One argument per line')}
                 rows={3}
                 disabled={busy || picking}
                 spellCheck={false}
                 aria-describedby={`${id}-arguments-hint`}
               />
               <p className="field-hint" id={`${id}-arguments-hint`}>
-                Put each argument on a separate line. A path with spaces stays on one line, without
-                extra quotes.
+                {t(
+                  'Put each argument on a separate line. A path with spaces stays on one line, without extra quotes.',
+                )}
               </p>
             </div>
           )}
@@ -379,7 +400,7 @@ export function ItemDialog({
               onChange={(event) => setEnabled(event.target.checked)}
               disabled={busy || picking}
             />
-            <span>Open this item when resuming</span>
+            <span>{t('Open this item when resuming')}</span>
           </label>
           {error && <ErrorMessage>{error}</ErrorMessage>}
         </div>
@@ -390,7 +411,7 @@ export function ItemDialog({
             onClick={onClose}
             disabled={busy || picking}
           >
-            Cancel
+            {t('Cancel')}
           </button>
           <button
             className="button button-primary"
@@ -398,7 +419,7 @@ export function ItemDialog({
             disabled={busy || picking || !name.trim() || !target.trim()}
           >
             {busy && <Spinner />}
-            {item ? 'Save changes' : 'Add item'}
+            {item ? t('Save changes') : t('Add item')}
           </button>
         </div>
       </form>
@@ -421,6 +442,7 @@ export function ConfirmDialog({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const { language, t } = useI18n();
   async function confirm() {
     if (busy) return;
     setBusy(true);
@@ -428,7 +450,7 @@ export function ConfirmDialog({
     try {
       await onConfirm();
     } catch (caught) {
-      setError(errorText(caught));
+      setError(errorText(caught, language));
     } finally {
       setBusy(false);
     }
@@ -446,7 +468,7 @@ export function ConfirmDialog({
           disabled={busy}
           data-autofocus
         >
-          Cancel
+          {t('Cancel')}
         </button>
         <button className="button button-danger" onClick={() => void confirm()} disabled={busy}>
           {busy && <Spinner />}
@@ -458,31 +480,32 @@ export function ConfirmDialog({
 }
 
 export function ReportDialog({ report, onClose }: { report: LaunchReport; onClose: () => void }) {
+  const { language, t } = useI18n();
   const opened = report.results.filter((result) => result.status === 'success').length;
   const failed = report.results.length - opened;
   return (
     <Modal
-      title={failed ? 'Some items need attention' : 'Ready to pick up where you left off'}
+      title={failed ? t('Some items need attention') : t('Ready to pick up where you left off')}
       subtitle={report.workspaceName}
       onClose={onClose}
       wide
     >
       <div className="dialog-body report-body">
-        <div className="report-summary" aria-label="Resume summary">
+        <div className="report-summary" aria-label={t('Resume summary')}>
           <span className="status-success">
             <CheckCircle2 size={16} aria-hidden="true" />
-            {opened} opened
+            {t('{count} opened', { count: opened })}
           </span>
           {failed > 0 && (
             <span className="status-failed">
               <AlertCircle size={16} aria-hidden="true" />
-              {failed} failed
+              {t('{count} failed', { count: failed })}
             </span>
           )}
-          {report.skipped > 0 && <span>{report.skipped} disabled</span>}
+          {report.skipped > 0 && <span>{t('{count} disabled', { count: report.skipped })}</span>}
         </div>
         {report.results.length > 0 ? (
-          <ul className="report-list" aria-label="Launch results">
+          <ul className="report-list" aria-label={t('Launch results')}>
             {report.results.map((result) => (
               <li className="report-item" key={result.itemId}>
                 <span
@@ -500,29 +523,31 @@ export function ReportDialog({ report, onClose }: { report: LaunchReport; onClos
                     <span
                       className={result.status === 'success' ? 'status-success' : 'status-failed'}
                     >
-                      {result.status === 'success' ? 'Opened' : 'Failed'}
+                      {result.status === 'success' ? t('Opened') : t('Failed')}
                     </span>
                   </div>
                   <p className="path-value" title={result.target}>
                     {result.target}
                   </p>
-                  {result.error && <p className="launch-error">{result.error}</p>}
+                  {result.error && (
+                    <p className="launch-error">{localizeError(result.error, language)}</p>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
         ) : (
           <p className="empty-report">
-            There were no enabled items to open. Add an item or turn one on to get started.
+            {t('There were no enabled items to open. Add an item or turn one on to get started.')}
           </p>
         )}
         <p className="field-hint report-note">
-          Opened items have been handed to Windows. Some apps may take a moment to appear.
+          {t('Opened items have been handed to Windows. Some apps may take a moment to appear.')}
         </p>
       </div>
       <div className="dialog-footer">
         <button className="button button-primary" onClick={onClose} data-autofocus>
-          Back to workspace
+          {t('Back to workspace')}
           <ChevronRight size={16} aria-hidden="true" />
         </button>
       </div>
@@ -531,78 +556,126 @@ export function ReportDialog({ report, onClose }: { report: LaunchReport; onClos
 }
 
 export function SettingsDialog({ info, onClose }: { info: AppInfo | null; onClose: () => void }) {
+  const { language, t, setLanguage, languageSaving } = useI18n();
+  const [error, setError] = useState('');
+  const languageId = useId();
+
+  async function changeLanguage(nextLanguage: typeof language) {
+    if (languageSaving) return;
+    setError('');
+    try {
+      await setLanguage(nextLanguage);
+    } catch (caught) {
+      setError(errorText(caught, language));
+    }
+  }
+
   return (
     <Modal
-      title="About ContextDock"
-      subtitle="Save your workspace. Resume it in one click."
+      title={t('Settings')}
+      subtitle={t('Save your workspace. Resume it in one click.')}
       onClose={onClose}
+      busy={languageSaving}
     >
       <div className="dialog-body settings-body">
         <div className="settings-brand">
           <Logo large />
           <div>
             <strong>ContextDock</strong>
-            <p>Version {info?.version ?? '—'}</p>
+            <p>{t('Version {version}', { version: info?.version ?? '—' })}</p>
           </div>
         </div>
         <section>
-          <h3>Keyboard shortcuts</h3>
+          <div className="field">
+            <label htmlFor={languageId}>{t('Language')}</label>
+            <select
+              id={languageId}
+              aria-label={t('Language')}
+              value={language}
+              onChange={(event) => void changeLanguage(event.target.value as typeof language)}
+              disabled={languageSaving}
+              aria-describedby={languageId + '-hint'}
+            >
+              <option value="en">English</option>
+              <option value="zh-CN">简体中文</option>
+              <option value="ja">日本語</option>
+            </select>
+            <p className="field-hint" id={languageId + '-hint'}>
+              {t('Changes apply immediately and are saved automatically.')}
+            </p>
+            {languageSaving && (
+              <p className="field-hint" role="status">
+                <Spinner /> {t('Saving language…')}
+              </p>
+            )}
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+          </div>
+        </section>
+        <section>
+          <h3>{t('Keyboard shortcuts')}</h3>
           <dl className="shortcuts-list">
             <div>
-              <dt>Show ContextDock</dt>
+              <dt>{t('Show ContextDock')}</dt>
               <dd>
                 <kbd>{info?.shortcut ?? 'Ctrl + Alt + Space'}</kbd>
               </dd>
             </div>
             <div>
-              <dt>Search workspaces</dt>
+              <dt>{t('Search workspaces')}</dt>
               <dd>
                 <kbd>Ctrl</kbd>
                 <kbd>K</kbd>
               </dd>
             </div>
             <div>
-              <dt>Select and resume</dt>
+              <dt>{t('Select and resume')}</dt>
               <dd>
-                <kbd>
-                  <ArrowUp size={12} />
+                <kbd aria-label={t('Up arrow')}>
+                  <ArrowUp size={12} aria-hidden="true" />
                 </kbd>
-                <kbd>
-                  <ArrowDown size={12} />
+                <kbd aria-label={t('Down arrow')}>
+                  <ArrowDown size={12} aria-hidden="true" />
                 </kbd>
-                <span>then</span>
+                <span>{t('then')}</span>
                 <kbd>Enter</kbd>
               </dd>
             </div>
           </dl>
           {info && !info.shortcutRegistered && (
             <ErrorMessage>
-              The global shortcut is in use by another app. Close that app or change its shortcut,
-              then restart ContextDock.
+              {t(
+                'The global shortcut is in use by another app. Close that app or change its shortcut, then restart ContextDock.',
+              )}
             </ErrorMessage>
           )}
         </section>
         <section>
-          <h3>Stored on this computer</h3>
+          <h3>{t('Stored on this computer')}</h3>
           <p className="settings-copy">
-            Your workspaces stay local. The desktop app, CLI, and MCP server share the same
-            workspace collection.
+            {t(
+              'Your workspaces stay local. The desktop app, CLI, and MCP server share the same workspace collection.',
+            )}
           </p>
           <label className="field-hint" htmlFor="data-directory">
-            Data folder
+            {t('Data folder')}
           </label>
           <input
             id="data-directory"
             className="path-value"
             readOnly
-            value={info?.dataDirectory ?? 'Unavailable'}
-            aria-label="Data folder"
+            value={info?.dataDirectory ?? t('Unavailable')}
+            aria-label={t('Data folder')}
           />
         </section>
       </div>
       <div className="dialog-footer">
-        <button className="button button-primary" onClick={onClose} data-autofocus>
-          Done
+        <button
+          className="button button-primary"
+          onClick={onClose}
+          data-autofocus
+          disabled={languageSaving}
+        >
+          {t('Done')}
         </button>
       </div>
     </Modal>

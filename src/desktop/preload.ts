@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopApi } from '../shared/types';
 const api: DesktopApi = {
+  getLanguage: () => ipcRenderer.invoke('app:get-language'),
+  setLanguage: (language) => ipcRenderer.invoke('app:set-language', language),
   listWorkspaces: () => ipcRenderer.invoke('workspace:list'),
   getWorkspace: (id) => ipcRenderer.invoke('workspace:get', id),
   createWorkspace: (input) => ipcRenderer.invoke('workspace:create', input),

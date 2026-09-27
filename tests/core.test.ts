@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createContext, resolveDataDirectory, WorkspaceError } from '../src/core';
 import { openDatabase, transaction } from '../src/core/database';
-import type { ItemInput, Launcher, WorkspaceInput } from '../src/shared/types';
+import type { ItemInput, Language, Launcher, WorkspaceInput } from '../src/shared/types';
 
 const testRoot = resolve('work', 'core-tests');
 mkdirSync(testRoot, { recursive: true });
@@ -57,11 +57,100 @@ describe('SQLite persistence and migration', () => {
     contexts.push(second);
     expect(second.service.getWorkspace(' modelmux ')).toEqual(original);
     const database = new DatabaseSync(join(first.dataDir, 'contextdock.sqlite'));
-    expect(database.prepare('PRAGMA user_version').get()?.user_version).toBe(1);
+    expect(database.prepare('PRAGMA user_version').get()?.user_version).toBe(2);
     expect(database.prepare('PRAGMA journal_mode').get()?.journal_mode).toBe('wal');
     database.close();
   });
 
+  it('upgrades a populated version 1 database without changing workspaces or items', () => {
+    const dataDir = tempDirectory();
+    const filename = join(dataDir, 'contextdock.sqlite');
+    const legacy = new DatabaseSync(filename);
+    legacy.exec(`
+      CREATE TABLE workspaces (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL, name_key TEXT NOT NULL UNIQUE,
+        description TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL, last_used_at TEXT
+      );
+      CREATE TABLE workspace_items (
+        id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+        type TEXT NOT NULL CHECK(type IN ('application', 'file', 'folder', 'url')),
+        name TEXT NOT NULL, target TEXT NOT NULL,
+        arguments_json TEXT NOT NULL DEFAULT '[]',
+        enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0, 1)),
+        launch_order INTEGER NOT NULL CHECK(launch_order >= 0)
+      );
+      CREATE INDEX workspace_items_order ON workspace_items(workspace_id, launch_order, id);
+      PRAGMA user_version = 1;
+    `);
+    legacy
+      .prepare('INSERT INTO workspaces VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(
+        'legacy-workspace',
+        'Existing workspace',
+        'existing workspace',
+        'Keep my notes',
+        '2026-01-01T00:00:00.000Z',
+        '2026-01-02T00:00:00.000Z',
+        '2026-01-03T00:00:00.000Z',
+      );
+    const insertItem = legacy.prepare(
+      'INSERT INTO workspace_items VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    );
+    insertItem.run(
+      'legacy-app',
+      'legacy-workspace',
+      'application',
+      'Editor',
+      'D:\\Apps\\editor.exe',
+      JSON.stringify(['--new-window', 'D:\\Projects\\existing']),
+      0,
+      0,
+    );
+    insertItem.run(
+      'legacy-site',
+      'legacy-workspace',
+      'url',
+      'Docs',
+      'https://example.com/docs',
+      '[]',
+      1,
+      1,
+    );
+    const workspacesBefore = legacy.prepare('SELECT * FROM workspaces').all();
+    const itemsBefore = legacy.prepare('SELECT * FROM workspace_items ORDER BY launch_order').all();
+    legacy.close();
+
+    const upgraded = createContext({ dataDir });
+    contexts.push(upgraded);
+    expect(upgraded.service.getLanguage()).toBe('en');
+    expect(upgraded.service.getWorkspace('legacy-workspace')).toMatchObject({
+      name: 'Existing workspace',
+      description: 'Keep my notes',
+      lastUsedAt: '2026-01-03T00:00:00.000Z',
+      items: [
+        {
+          id: 'legacy-app',
+          enabled: false,
+          arguments: ['--new-window', 'D:\\Projects\\existing'],
+          launchOrder: 0,
+        },
+        { id: 'legacy-site', enabled: true, launchOrder: 1 },
+      ],
+    });
+    upgraded.service.setLanguage('ja');
+    const inspection = new DatabaseSync(filename);
+    expect(inspection.prepare('PRAGMA user_version').get()?.user_version).toBe(2);
+    expect(inspection.prepare('SELECT * FROM workspaces').all()).toEqual(workspacesBefore);
+    expect(inspection.prepare('SELECT * FROM workspace_items ORDER BY launch_order').all()).toEqual(
+      itemsBefore,
+    );
+    expect(
+      inspection.prepare('SELECT value FROM app_settings WHERE key = ?').get('language')?.value,
+    ).toBe('ja');
+    inspection.close();
+  });
   it('enforces foreign keys and cascades deletion', () => {
     const { service, dataDir } = setup();
     const workspace = service.createWorkspace({ name: 'Delete me' });
@@ -78,12 +167,12 @@ describe('SQLite persistence and migration', () => {
     const dataDir = tempDirectory();
     const database = openDatabase(dataDir);
     database.exec(
-      "CREATE TABLE future_data (value TEXT); INSERT INTO future_data VALUES ('keep'); PRAGMA user_version = 99;",
+      "CREATE TABLE future_data (value TEXT); INSERT INTO future_data VALUES ('keep'); PRAGMA user_version = 3;",
     );
     database.close();
     expect(() => createContext({ dataDir })).toThrow('newer ContextDock version');
     const inspection = new DatabaseSync(join(dataDir, 'contextdock.sqlite'));
-    expect(inspection.prepare('PRAGMA user_version').get()?.user_version).toBe(99);
+    expect(inspection.prepare('PRAGMA user_version').get()?.user_version).toBe(3);
     expect(inspection.prepare('SELECT value FROM future_data').get()?.value).toBe('keep');
     inspection.close();
   });
@@ -115,6 +204,46 @@ describe('SQLite persistence and migration', () => {
   });
 });
 
+describe('WorkspaceService language settings', () => {
+  it('defaults to English and persists each supported language between connections and restarts', () => {
+    const first = setup();
+    expect(first.service.getLanguage()).toBe('en');
+    expect(first.service.setLanguage('zh-CN')).toBe('zh-CN');
+    const second = createContext({ dataDir: first.dataDir });
+    contexts.push(second);
+    expect(second.service.getLanguage()).toBe('zh-CN');
+    expect(second.service.setLanguage('ja')).toBe('ja');
+    expect(first.service.getLanguage()).toBe('ja');
+    first.close();
+    second.close();
+    const reopened = createContext({ dataDir: first.dataDir });
+    contexts.push(reopened);
+    expect(reopened.service.getLanguage()).toBe('ja');
+    expect(reopened.service.setLanguage('en')).toBe('en');
+    expect(reopened.service.getLanguage()).toBe('en');
+  });
+
+  it.each([null, undefined, false, 1, {}, [], '', 'en-US', 'zh', 'ZH-CN', 'ja-JP'])(
+    'rejects unsupported language payload %j without changing the saved preference',
+    (value) => {
+      const { service } = setup();
+      service.setLanguage('zh-CN');
+      expect(() => service.setLanguage(value as Language)).toThrow(WorkspaceError);
+      expect(service.getLanguage()).toBe('zh-CN');
+    },
+  );
+
+  it('falls back to English if a saved setting is not a supported language', () => {
+    const { service, dataDir } = setup();
+    const database = new DatabaseSync(join(dataDir, 'contextdock.sqlite'));
+    database
+      .prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)')
+      .run('language', 'unsupported');
+    database.close();
+    expect(service.getLanguage()).toBe('en');
+    expect(service.setLanguage('ja')).toBe('ja');
+  });
+});
 describe('WorkspaceService management', () => {
   it('creates, updates, finds and lists workspaces with normalized case-insensitive unique names', () => {
     const { service } = setup();

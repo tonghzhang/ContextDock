@@ -24,6 +24,10 @@ const migrations = [
     launch_order INTEGER NOT NULL CHECK(launch_order >= 0)
   );
   CREATE INDEX workspace_items_order ON workspace_items(workspace_id, launch_order, id);`,
+  `CREATE TABLE app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );`,
 ];
 
 export function transaction<T>(database: DatabaseSync, action: () => T): T {
